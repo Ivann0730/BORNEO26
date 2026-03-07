@@ -7,17 +7,16 @@ import { useSimulation } from "@/hooks/useSimulation";
 import { useMap } from "@/hooks/useMap";
 import { useDecision } from "@/hooks/useDecision";
 import { useReport } from "@/hooks/useReport";
+import { setTimeOfDay, setScenarioAtmosphere } from "@/lib/mapbox/camera";
 import Navbar from "@/components/layout/Navbar";
 import LocationSearch from "@/components/sim/LocationSearch";
 import HeadlineSelector from "@/components/sim/HeadlineSelector";
 import ScenarioPanel from "@/components/sim/ScenarioPanel";
-import DecisionInput from "@/components/sim/DecisionInput";
-import HintChips from "@/components/sim/HintChips";
-import ScoreIndicator from "@/components/sim/ScoreIndicator";
-import ExplanationPanel from "@/components/sim/ExplanationPanel";
+import SimDecisionUI from "./SimDecisionUI";
 import DeckGLOverlay from "@/components/map/DeckGLOverlay";
-import { Loader2 } from "lucide-react";
-import type { DecisionResult } from "@/types";
+import ZoneLegend from "@/components/sim/ZoneLegend";
+import { Loader2, Play } from "lucide-react";
+
 
 const MapCanvas = dynamic(() => import("@/components/map/MapCanvas"), {
     ssr: false,
@@ -34,16 +33,15 @@ export default function SimPage() {
     const map = useMap();
     const decision = useDecision();
     const report = useReport();
-    const [lastResult, setLastResult] = useState<DecisionResult | null>(null);
-    const [showExplanation, setShowExplanation] = useState(false);
-    const [decisionInput, setDecisionInput] = useState("");
+    const [reportTriggered, setReportTriggered] = useState(false);
+
+    const isSimulationActive = sim.step === "decision" || sim.step === "scenario";
 
     /* ─── location selected ─── */
     const handleLocationSelect = useCallback(
         (name: string, lat: number, lng: number, country: string) => {
             sim.setLocation({ name, lat, lng, country, region: "" });
             map.flyToCoords(lng, lat, 12);
-
             fetch(`/api/headlines?lat=${lat}&lng=${lng}&name=${encodeURIComponent(name)}`)
                 .then((r) => r.json())
                 .then((data) => sim.setHeadlines(data))
@@ -62,7 +60,7 @@ export default function SimPage() {
 
     /* ─── headline selected ─── */
     const handleHeadlineSelect = useCallback(
-        async (headline: typeof sim.headlines[0]) => {
+        async (headline: (typeof sim.headlines)[0]) => {
             sim.selectHeadline(headline);
             try {
                 const res = await fetch("/api/analyze", {
@@ -72,9 +70,13 @@ export default function SimPage() {
                 });
                 if (!res.ok) throw new Error("Analyze failed");
                 const scenario = await res.json();
-                sim.setScenario(scenario);
+
+                // BUG-03: fly to scenario cameraTarget (resolved coordinates), not user click
                 map.flyTo(scenario.cameraTarget, 3000);
-                map.startBroll(scenario.cameraTarget.center[0], scenario.cameraTarget.center[1]);
+                map.startBroll(
+                    scenario.cameraTarget.center[0],
+                    scenario.cameraTarget.center[1]
+                );
                 if (scenario.affectedArea) {
                     map.addLayers([{
                         type: "add_layer",
@@ -84,6 +86,11 @@ export default function SimPage() {
                         color: "#14B8A6",
                     }]);
                 }
+                if (map.mapRef.current) {
+                    setScenarioAtmosphere(map.mapRef.current, scenario.context);
+                }
+
+                sim.setScenario(scenario);
             } catch {
                 sim.setError("Failed to analyze the headline. Please try again.");
             }
@@ -91,52 +98,16 @@ export default function SimPage() {
         [sim, map]
     );
 
-    /* ─── scenario ready → decisions ─── */
     const handleScenarioReady = useCallback(() => {
-        map.stopBroll();
+        if (!sim.scenario) return;
         sim.startDecisions();
     }, [sim, map]);
 
-    /* ─── submit decision ─── */
-    const handleDecisionSubmit = useCallback(
-        async (text: string) => {
-            if (!sim.scenario) return;
-            sim.setLoading(true);
-            const result = await decision.submitDecision(
-                sim.scenario,
-                text,
-                sim.currentRound,
-                sim.currentScore,
-                sim.decisions
-            );
-            if (result) {
-                sim.addDecision(result);
-                map.addLayers(result.mapInstructions);
-                setLastResult(result);
-                setShowExplanation(true);
-            } else {
-                sim.setLoading(false);
-            }
-        },
-        [sim, decision, map]
-    );
-
-    /* ─── continue after explanation ─── */
-    const handleContinue = useCallback(() => {
-        setShowExplanation(false);
-        setLastResult(null);
-        setDecisionInput("");
-    }, []);
-
-    /* ─── end early ─── */
-    const handleEndEarly = useCallback(() => {
-        sim.endEarly();
-    }, [sim]);
-
     /* ─── generate report on complete ─── */
     useEffect(() => {
-        if (sim.step !== "complete" || sim.reportSlug) return;
+        if (sim.step !== "complete" || reportTriggered) return;
         if (!sim.location || !sim.selectedHeadline) return;
+        setReportTriggered(true);
 
         report
             .generateReport(
@@ -154,10 +125,12 @@ export default function SimPage() {
             });
     }, [sim.step]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    /* ─── hint chip fill ─── */
-    const handleHintSelect = useCallback((hint: string) => {
-        setDecisionInput(hint);
-    }, []);
+    /* ─── time-of-day per round ─── */
+    useEffect(() => {
+        if (sim.step === "decision" && map.mapRef.current) {
+            setTimeOfDay(map.mapRef.current, sim.currentRound);
+        }
+    }, [sim.currentRound, sim.step]); // eslint-disable-line react-hooks/exhaustive-deps
 
     return (
         <div className="relative w-full h-screen overflow-hidden">
@@ -168,12 +141,26 @@ export default function SimPage() {
                 <MapCanvas
                     onMapReady={map.setMapInstance}
                     onClick={handleMapClick}
+                    isSimulationActive={isSimulationActive}
                 />
-                <DeckGLOverlay
-                    map={map.mapRef.current}
-                    layers={map.deckLayers}
-                />
+                <DeckGLOverlay map={map.mapRef.current} layers={map.deckLayers} />
             </div>
+
+            {/* Resume B-Roll Button */}
+            {map.isBrollPaused && sim.step !== "complete" && (
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 pointer-events-auto z-[1000] animate-in slide-in-from-bottom-4 fade-in duration-300">
+                    <button
+                        onClick={map.resumeBroll}
+                        className="bg-card/90 backdrop-blur-md border border-border text-foreground px-5 py-2.5 rounded-full shadow-xl flex items-center gap-2 hover:bg-card/100 hover:scale-105 transition-all text-sm font-semibold"
+                    >
+                        <Play className="w-4 h-4 fill-primary text-primary" />
+                        Resume Camera
+                    </button>
+                </div>
+            )}
+
+            {/* Zone legend (visible during decision) */}
+            {sim.step === "decision" && <ZoneLegend />}
 
             {/* UI overlays */}
             <div className="absolute inset-0 pointer-events-none pt-14 p-4 flex flex-col">
@@ -200,54 +187,21 @@ export default function SimPage() {
                     </div>
                 )}
 
+
                 {/* Scenario briefing */}
                 {sim.step === "scenario" && sim.scenario && (
                     <div className="pointer-events-auto mt-auto sm:mt-0 sm:ml-auto sm:mr-4 sm:self-end">
-                        <ScenarioPanel
-                            context={sim.scenario.context}
-                            onReady={handleScenarioReady}
-                        />
+                        <ScenarioPanel context={sim.scenario.context} onReady={handleScenarioReady} />
                     </div>
                 )}
 
                 {/* Decision round */}
                 {sim.step === "decision" && sim.scenario && (
-                    <div className="pointer-events-auto mt-auto flex flex-col gap-3 pb-4">
-                        <ScoreIndicator
-                            score={sim.currentScore}
-                            previousScore={lastResult?.newScore !== undefined ? sim.currentScore - (lastResult?.scoreDelta ?? 0) : undefined}
-                            round={sim.currentRound}
-                        />
-
-                        {showExplanation && lastResult ? (
-                            <ExplanationPanel
-                                explanation={lastResult.explanation}
-                                climateTerms={lastResult.climateTerms}
-                                alternativeDecision={lastResult.alternativeDecision}
-                                onContinue={handleContinue}
-                                isLastRound={sim.currentRound > 3}
-                            />
-                        ) : (
-                            <>
-                                <HintChips
-                                    hints={sim.scenario.hints}
-                                    onSelect={handleHintSelect}
-                                />
-                                <DecisionInput
-                                    onSubmit={handleDecisionSubmit}
-                                    isSubmitting={decision.isSubmitting || sim.isLoading}
-                                />
-                                {sim.currentRound >= 2 && (
-                                    <button
-                                        onClick={handleEndEarly}
-                                        className="text-xs text-muted-foreground underline underline-offset-2 mx-auto hover:text-foreground transition-colors"
-                                    >
-                                        End simulation early
-                                    </button>
-                                )}
-                            </>
-                        )}
-                    </div>
+                    <SimDecisionUI
+                        sim={sim}
+                        decision={decision}
+                        map={map}
+                    />
                 )}
 
                 {/* Complete — loading report */}
@@ -255,7 +209,9 @@ export default function SimPage() {
                     <div className="pointer-events-auto flex flex-col items-center justify-center flex-1 gap-3">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
                         <p className="text-sm text-muted-foreground">
-                            Generating your report...
+                            {sim.isFailed
+                                ? "Community trust collapsed... Generating failure report..."
+                                : "Generating your report..."}
                         </p>
                     </div>
                 )}
