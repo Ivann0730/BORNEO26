@@ -1,4 +1,4 @@
-import { supabaseBrowser } from "@/lib/supabase/client";
+import { supabaseServer } from "@/lib/supabase/server";
 import type { ReportSession, Location, ClimateHeadline, DecisionResult } from "@/types";
 import ReportPageClient from "./ReportPageClient";
 
@@ -8,7 +8,7 @@ interface PageProps {
 
 async function getReport(slug: string): Promise<ReportSession | null> {
     try {
-        const { data, error } = await supabaseBrowser
+        const { data, error } = await supabaseServer
             .from("reports")
             .select("*")
             .eq("slug", slug)

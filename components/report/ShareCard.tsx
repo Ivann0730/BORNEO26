@@ -9,6 +9,7 @@ interface ShareCardProps {
     report: ReportSession;
 }
 
+
 function getScoreLabel(score: number): string {
     if (score >= 80) return "Climate Champion";
     if (score >= 60) return "Thoughtful Leader";
@@ -22,7 +23,10 @@ export default function ShareCard({ report }: ShareCardProps) {
     async function handleDownload() {
         if (!cardRef.current) return;
         try {
+            // BUG-02: use useCORS + allowTaint for cross-origin safety
             const canvas = await html2canvas(cardRef.current, {
+                useCORS: true,
+                allowTaint: false,
                 scale: 2,
                 backgroundColor: null,
             });
@@ -44,12 +48,13 @@ export default function ShareCard({ report }: ShareCardProps) {
         }
     }
 
+
     return (
         <div className="flex flex-col gap-4">
-            {/* Capture target */}
+            {/* Capture target — self-contained, no map tiles */}
             <div
                 ref={cardRef}
-                className="relative w-full max-w-sm mx-auto aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-primary/90 via-primary to-accent/80 p-6 flex flex-col justify-between text-white"
+                className="relative w-full max-w-sm mx-auto aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-[#0d1b2a] via-[#1b2a3b] to-[#14B8A6]/40 p-6 flex flex-col justify-between text-white"
             >
                 <div>
                     <p className="text-xs font-bold uppercase tracking-widest opacity-80">
@@ -64,9 +69,13 @@ export default function ShareCard({ report }: ShareCardProps) {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                    {report.userName && (
-                        <p className="text-sm font-semibold">{report.userName}</p>
-                    )}
+                    <div className="flex items-center gap-2">
+                        {report.userName && (
+                            <p className="text-sm font-semibold">
+                                {report.userName}
+                            </p>
+                        )}
+                    </div>
                     <div className="flex items-center gap-2">
                         <Award className="h-5 w-5" />
                         <span className="text-2xl font-bold">

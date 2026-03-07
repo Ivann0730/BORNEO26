@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { MapPin, Award, ArrowRight, RefreshCw } from "lucide-react";
+import { MapPin, Award, RefreshCw, ArrowRight, AlertTriangle } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import DecisionTreeView from "@/components/report/DecisionTreeView";
 import ShareCard from "@/components/report/ShareCard";
@@ -12,6 +12,7 @@ import type { ReportSession } from "@/types";
 interface ReportPageClientProps {
     report: ReportSession;
 }
+
 
 function getScoreColor(score: number): string {
     if (score < 40) return "text-red-500";
@@ -23,10 +24,16 @@ export default function ReportPageClient({ report: initial }: ReportPageClientPr
     const [report, setReport] = useState(initial);
     const [showNameInput, setShowNameInput] = useState(!report.userName);
 
+    const isFailed = report.finalScore <= 15;
+
     function handleNameSubmit(name: string) {
         setReport((prev) => ({ ...prev, userName: name }));
         setShowNameInput(false);
     }
+
+    const initialScore = report.decisions.length > 0
+        ? report.decisions[0].newScore - report.decisions[0].scoreDelta
+        : report.finalScore;
 
     return (
         <div className="min-h-screen bg-background">
@@ -37,19 +44,31 @@ export default function ReportPageClient({ report: initial }: ReportPageClientPr
                 <div className="text-center flex flex-col gap-3">
                     <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                         <MapPin className="h-4 w-4" />
-                        <span>
-                            {report.location.name}, {report.location.country}
-                        </span>
+                        <span>{report.location.name}, {report.location.country}</span>
                     </div>
                     <h1 className="text-xl sm:text-2xl font-bold leading-snug px-4">
                         {report.headline.title}
                     </h1>
+
+
+                    {/* Score */}
                     <div className="flex items-center justify-center gap-2">
-                        <Award className="h-5 w-5 text-primary" />
+                        {isFailed ? (
+                            <AlertTriangle className="h-5 w-5 text-red-500" />
+                        ) : (
+                            <Award className="h-5 w-5 text-primary" />
+                        )}
                         <span className={`text-3xl font-bold ${getScoreColor(report.finalScore)}`}>
                             {report.finalScore}%
                         </span>
                     </div>
+
+                    {isFailed && (
+                        <p className="text-sm text-red-500 font-medium">
+                            Community trust collapsed — simulation ended early.
+                        </p>
+                    )}
+
                     {report.verdict && (
                         <p className="text-sm text-muted-foreground italic max-w-md mx-auto">
                             {report.verdict}
@@ -67,9 +86,8 @@ export default function ReportPageClient({ report: initial }: ReportPageClientPr
                     </h2>
                     <DecisionTreeView
                         decisions={report.decisions}
-                        initialScore={report.decisions.length > 0
-                            ? report.decisions[0].newScore - report.decisions[0].scoreDelta
-                            : report.finalScore}
+                        initialScore={initialScore}
+                        isFailed={isFailed}
                     />
                 </section>
 
