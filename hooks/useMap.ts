@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useCallback, useState } from "react";
+import { useRef, useCallback, useState, useEffect } from "react";
 import mapboxgl from "mapbox-gl";
 import {
     flyToLocation,
@@ -15,6 +15,9 @@ export function useMap() {
     const mapRef = useRef<mapboxgl.Map | null>(null);
     const [layers, setLayers] = useState<MapInstruction[]>([]);
     const [isMapReady, setIsMapReady] = useState(false);
+    const [isBrollPaused, setIsBrollPaused] = useState(false);
+    const brollCenterRef = useRef<[number, number] | null>(null);
+    const isBrollActiveRef = useRef(false);
 
     const setMapInstance = useCallback((map: mapboxgl.Map) => {
         mapRef.current = map;
@@ -46,13 +49,45 @@ export function useMap() {
 
     const startBroll = useCallback((lng: number, lat: number) => {
         if (mapRef.current) {
+            brollCenterRef.current = [lng, lat];
             startBrollAnimation(mapRef.current, lng, lat);
+            isBrollActiveRef.current = true;
+            setIsBrollPaused(false);
         }
     }, []);
 
     const stopBroll = useCallback(() => {
         stopBrollAnimation();
+        isBrollActiveRef.current = false;
+        setIsBrollPaused(false);
     }, []);
+
+    const resumeBroll = useCallback(() => {
+        if (mapRef.current && brollCenterRef.current) {
+            startBrollAnimation(mapRef.current, brollCenterRef.current[0], brollCenterRef.current[1]);
+            isBrollActiveRef.current = true;
+            setIsBrollPaused(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        const map = mapRef.current;
+        if (!map) return;
+
+        const handleMoveStart = (e: any) => {
+            if (e.originalEvent && isBrollActiveRef.current) {
+                stopBrollAnimation();
+                isBrollActiveRef.current = false;
+                setIsBrollPaused(true);
+            }
+        };
+
+        map.on("movestart", handleMoveStart);
+
+        return () => {
+            map.off("movestart", handleMoveStart);
+        };
+    }, [isMapReady]);
 
     const deckLayers = buildLayers(layers);
 
@@ -66,6 +101,8 @@ export function useMap() {
         clearLayers,
         startBroll,
         stopBroll,
+        resumeBroll,
+        isBrollPaused,
         layers,
         deckLayers,
     };

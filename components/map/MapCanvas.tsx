@@ -3,9 +3,10 @@
 import { useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
+import { enableTerrain, stopBrollAnimation } from "@/lib/mapbox/camera";
 
-const DARK_STYLE = "mapbox://styles/mapbox/dark-v11";
-const LIGHT_STYLE = "mapbox://styles/mapbox/light-v11";
+// Mapbox Standard style — includes detailed 3D building models, landmarks, trees
+const STANDARD_STYLE = "mapbox://styles/mapbox/standard";
 
 function getIsDark(): boolean {
     return document.documentElement.classList.contains("dark");
@@ -14,16 +15,23 @@ function getIsDark(): boolean {
 interface MapCanvasProps {
     onMapReady: (map: mapboxgl.Map) => void;
     onClick?: (lng: number, lat: number) => void;
+    isSimulationActive?: boolean;
     className?: string;
 }
 
 export default function MapCanvas({
     onMapReady,
     onClick,
+    isSimulationActive = false,
     className = "",
 }: MapCanvasProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const mapInstanceRef = useRef<mapboxgl.Map | null>(null);
+    const clickHandlerRef = useRef<((e: mapboxgl.MapMouseEvent) => void) | null>(null);
+    const simActiveRef = useRef(isSimulationActive);
+
+    // Keep ref in sync with prop
+    simActiveRef.current = isSimulationActive;
 
     useEffect(() => {
         if (!containerRef.current || mapInstanceRef.current) return;
@@ -35,17 +43,25 @@ export default function MapCanvas({
         }
 
         mapboxgl.accessToken = token;
-
         const isDark = getIsDark();
 
         const map = new mapboxgl.Map({
             container: containerRef.current,
-            style: isDark ? DARK_STYLE : LIGHT_STYLE,
+            style: STANDARD_STYLE,
             center: [118, 5],
             zoom: 4,
             pitch: 0,
             bearing: 0,
             attributionControl: false,
+            config: {
+                basemap: {
+                    theme: "night",
+                    lightPreset: "night",
+                    show3dObjects: true,
+                    showPointOfInterestLabels: true,
+                    showPlaceLabels: true,
+                }
+            }
         });
 
         map.addControl(
@@ -55,33 +71,38 @@ export default function MapCanvas({
 
         map.on("load", () => {
             mapInstanceRef.current = map;
+
+            // Dark fog to match dark-v11 feel
+            map.setFog({
+                color: "#0d1b2a",
+                "high-color": "#0d1b2a",
+                "space-color": "#070d15",
+                "horizon-blend": 0.08,
+                "star-intensity": 0.15,
+            } as mapboxgl.FogSpecification);
+
+            enableTerrain(map);
             onMapReady(map);
         });
 
+        // BUG-01: Guard click handler with simulation active check
         if (onClick) {
-            map.on("click", (e) => {
+            const handler = (e: mapboxgl.MapMouseEvent) => {
+                if (simActiveRef.current) return;
                 onClick(e.lngLat.lng, e.lngLat.lat);
-            });
+            };
+            clickHandlerRef.current = handler;
+            map.on("click", handler);
         }
 
-        // Watch for theme changes via MutationObserver on <html> class
-        const observer = new MutationObserver(() => {
-            const dark = getIsDark();
-            const newStyle = dark ? DARK_STYLE : LIGHT_STYLE;
-            map.setStyle(newStyle);
-        });
-
-        observer.observe(document.documentElement, {
-            attributes: true,
-            attributeFilter: ["class"],
-        });
+        // No theme observer needed — map is always dark/night
 
         return () => {
-            observer.disconnect();
+            stopBrollAnimation();
             map.remove();
             mapInstanceRef.current = null;
         };
-    }, []);  // eslint-disable-line react-hooks/exhaustive-deps
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     return (
         <div
