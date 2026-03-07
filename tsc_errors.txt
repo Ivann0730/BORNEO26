@@ -1,0 +1,10 @@
+﻿app/sim/page.tsx(228,70): error TS2367: This comparison appears to be unintentional because the types '"decision"' and '"complete"' have no overlap.
+components/map/DeckGLOverlay.tsx(34,43): error TS2322: Type 'unknown[]' is not assignable to type '(false | LayersList | Layer<{}> | null | undefined)[]'.
+  Type 'unknown' is not assignable to type 'false | LayersList | Layer<{}> | null | undefined'.
+components/sim/LocationSearch.tsx(24,25): error TS2554: Expected 1 arguments, but got 0.
+hooks/useVoice.ts(18,35): error TS2304: Cannot find name 'SpeechRecognition'.
+hooks/useVoice.ts(22,20): error TS2339: Property 'SpeechRecognition' does not exist on type 'Window & typeof globalThis'.
+hooks/useVoice.ts(22,48): error TS2339: Property 'webkitSpeechRecognition' does not exist on type 'Window & typeof globalThis'.
+hooks/useVoice.ts(31,44): error TS2552: Cannot find name 'SpeechRecognitionEvent'. Did you mean 'SpeechRecognitionResult'?
+lib/gemini/schemas.ts(15,19): error TS2554: Expected 2-3 arguments, but got 1.
+lib/validations/api.ts(60,27): error TS2554: Expected 2-3 arguments, but got 1.
