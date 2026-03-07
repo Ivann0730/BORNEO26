@@ -141,3 +141,24 @@
 .mapboxgl-ctrl-attrib {
   font-size: 10px !important;
 }
+
+/* UI-03: Zone marker pulse animation */
+.zone-marker {
+  border-radius: 50%;
+  animation: pulse 2.5s ease-in-out infinite;
+  backdrop-filter: blur(2px);
+}
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 0.85; }
+  50% { transform: scale(1.12); opacity: 1; }
+}
+
+/* UI-05: Panel gradient backgrounds */
+.stemma-panel-bg {
+  background: linear-gradient(135deg, #0d1b2a 0%, #1b2a3b 50%, #0d1b2a 100%);
+}
+
+/* Smooth transition duration helpers */
+.duration-600 {
+  transition-duration: 600ms;
+}

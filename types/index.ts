@@ -1,3 +1,4 @@
+
 /* ──────────────────────── Location ──────────────────────── */
 export interface Location {
   name: string;
@@ -16,6 +17,8 @@ export interface ClimateHeadline {
   url: string;
   publishedAt: string;
   locationTag: string;
+  resolvedLat?: number;
+  resolvedLng?: number;
 }
 
 /* ──────────────────── Camera Target ──────────────────────── */
@@ -67,6 +70,8 @@ export interface DecisionResult {
   interpretation: string;
   scoreDelta: number;
   newScore: number;
+  satisfactionDelta: number;
+  newSatisfaction: number;
   mapInstructions: MapInstruction[];
   explanation: string;
   climateTerms: ClimateTerm[];
