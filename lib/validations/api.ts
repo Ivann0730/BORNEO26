@@ -1,6 +1,9 @@
 import { z } from "zod";
+import { MAX_DECISIONS } from "@/lib/constants";
 
 /* ────────── Shared sub-schemas ────────── */
+
+
 
 const locationSchema = z.object({
     name: z.string().min(1),
@@ -18,6 +21,8 @@ const headlineSchema = z.object({
     url: z.string(),
     publishedAt: z.string(),
     locationTag: z.string(),
+    resolvedLat: z.number().optional(),
+    resolvedLng: z.number().optional(),
 });
 
 /* ────────── /api/headlines query ────────── */
@@ -54,15 +59,16 @@ export const decisionBodySchema = z.object({
         affectedArea: z.object({
             type: z.literal("Feature"),
             geometry: z.object({
-                type: z.literal("Polygon"),
-                coordinates: z.array(z.array(z.tuple([z.number(), z.number()]))),
-            }),
+                type: z.string(),
+                coordinates: z.unknown(),
+            }).passthrough(),
             properties: z.record(z.string(), z.unknown()).nullable(),
-        }),
+        }).passthrough(),
     }),
     decisionText: z.string().min(1),
-    round: z.number().int().min(1).max(3),
+    round: z.number().int().min(1).max(MAX_DECISIONS),
     previousScore: z.number().int().min(0).max(100),
+    previousSatisfaction: z.number().int().min(0).max(100),
     history: z.array(z.unknown()),
 });
 

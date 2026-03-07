@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { analyzeBodySchema } from "@/lib/validations/api";
-import { buildAnalyzePrompt } from "@/lib/gemini/prompts";
+import { buildAnalyzePrompt, buildLocationResolvePrompt } from "@/lib/gemini/prompts";
 import { parseGeminiJson } from "@/lib/gemini/parser";
-import { scenarioResponseSchema } from "@/lib/gemini/schemas";
+import { scenarioResponseSchema, locationResolveSchema } from "@/lib/gemini/schemas";
 import type { Scenario } from "@/types";
 
 export async function POST(request: NextRequest) {
@@ -18,13 +18,35 @@ export async function POST(request: NextRequest) {
         }
 
         const { location, headline } = parsed.data;
-        const prompt = buildAnalyzePrompt(location, headline);
+
+        // BUG-03: Resolve actual coordinates from headline text
+        let resolvedLat = headline.resolvedLat ?? location.lat;
+        let resolvedLng = headline.resolvedLng ?? location.lng;
+
+        if (!headline.resolvedLat || !headline.resolvedLng) {
+            try {
+                const resolvePrompt = buildLocationResolvePrompt(
+                    headline.title,
+                    headline.description,
+                    location.lat,
+                    location.lng
+                );
+                const resolved = await parseGeminiJson(resolvePrompt, locationResolveSchema);
+                resolvedLat = resolved.lat;
+                resolvedLng = resolved.lng;
+            } catch {
+                console.warn("Location resolve failed, using user coordinates");
+            }
+        }
+
+        const resolvedLocation = { ...location, lat: resolvedLat, lng: resolvedLng };
+        const prompt = buildAnalyzePrompt(resolvedLocation, headline);
         const result = await parseGeminiJson(prompt, scenarioResponseSchema);
 
         const scenario = {
             ...result,
-            headline,
-            location,
+            headline: { ...headline, resolvedLat, resolvedLng },
+            location: resolvedLocation,
         } as Scenario;
 
         return NextResponse.json(scenario);
