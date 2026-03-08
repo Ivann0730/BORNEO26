@@ -51,6 +51,8 @@ export async function POST(request: NextRequest) {
         // Force camera to orbit the exact resolved coordinates rather than LLM hallucinations
         if (scenario.cameraTarget) {
             scenario.cameraTarget.center = [resolvedLng, resolvedLat];
+            scenario.cameraTarget.zoom = 16.5; // Ensure low enough altitude for 3D buildings
+            scenario.cameraTarget.pitch = 75;
         }
 
         return NextResponse.json(scenario);

@@ -69,6 +69,24 @@ export default function MapCanvas({
             "bottom-right"
         );
 
+        const updatePadding = () => {
+            const isMobile = window.innerWidth < 640;
+            // When simulation is active, offset center so the target isn't covered by the UI panel
+            if (simActiveRef.current) {
+                map.setPadding({
+                    top: 0,
+                    bottom: isMobile ? 350 : 0,
+                    left: 0,
+                    right: isMobile ? 0 : 450,
+                });
+            } else {
+                map.setPadding({ top: 0, bottom: 0, left: 0, right: 0 });
+            }
+        };
+
+        updatePadding();
+        window.addEventListener("resize", updatePadding);
+
         map.on("load", () => {
             mapInstanceRef.current = map;
 
@@ -98,6 +116,7 @@ export default function MapCanvas({
         // No theme observer needed — map is always dark/night
 
         return () => {
+            window.removeEventListener("resize", updatePadding);
             stopBrollAnimation();
             map.remove();
             mapInstanceRef.current = null;

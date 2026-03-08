@@ -80,7 +80,9 @@ export default function SimPage() {
                 map.flyTo(scenario.cameraTarget, 3000);
                 map.startBroll(
                     scenario.cameraTarget.center[0],
-                    scenario.cameraTarget.center[1]
+                    scenario.cameraTarget.center[1],
+                    scenario.cameraTarget.zoom,
+                    scenario.cameraTarget.pitch || 60
                 );
                 if (scenario.affectedArea) {
                     map.addLayers([{
@@ -218,13 +220,25 @@ export default function SimPage() {
 
                 {/* Complete — loading report */}
                 {sim.step === "complete" && (
-                    <div className="pointer-events-auto flex flex-col items-center justify-center flex-1 gap-3">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                        <p className="text-sm text-muted-foreground">
-                            {sim.isFailed
-                                ? "Community trust collapsed... Generating failure report..."
-                                : "Generating your report..."}
-                        </p>
+                    <div className="pointer-events-auto fixed inset-0 z-[5000] flex flex-col items-center justify-center gap-6 bg-background/80 backdrop-blur-md animate-in fade-in duration-500">
+                        <div className="relative flex items-center justify-center h-24 w-24">
+                            <div className="absolute inset-0 rounded-full border-[3px] border-primary/20" />
+                            <div className="absolute inset-0 rounded-full border-[3px] border-primary border-t-transparent animate-spin" />
+                            <div className="absolute inset-3 rounded-full border-[3px] border-accent/20" />
+                            <div className="absolute inset-3 rounded-full border-[3px] border-accent border-b-transparent animate-[spin_1.5s_linear_infinite_reverse]" />
+                            <div className="absolute inset-6 rounded-full border-[3px] border-emerald-500/20" />
+                            <div className="absolute inset-6 rounded-full border-[3px] border-emerald-500 border-l-transparent animate-[spin_2s_linear_infinite]" />
+                        </div>
+                        <div className="flex flex-col items-center gap-2 text-center px-4">
+                            <h2 className="text-2xl font-bold text-foreground tracking-tight">
+                                {sim.isFailed ? "Simulation Failed" : "Simulation Complete"}
+                            </h2>
+                            <p className="text-base text-muted-foreground max-w-sm">
+                                {sim.isFailed
+                                    ? "Community trust collapsed. Compiling your failure analysis..."
+                                    : "Finalizing data and generating your comprehensive report..."}
+                            </p>
+                        </div>
                     </div>
                 )}
 

@@ -41,7 +41,9 @@ let brollAnimationId: number | null = null;
 export function startBrollAnimation(
     map: mapboxgl.Map,
     centerLng: number,
-    centerLat: number
+    centerLat: number,
+    zoom: number = 16.5,
+    pitch: number = 75
 ): void {
     stopBrollAnimation();
     let bearing = map.getBearing();
@@ -54,8 +56,8 @@ export function startBrollAnimation(
 
     map.flyTo({
         center: [centerLng, centerLat],
-        zoom: 16.5,
-        pitch: 75,
+        zoom,
+        pitch,
         bearing,
         duration: 2500,
         essential: true,

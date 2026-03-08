@@ -18,7 +18,7 @@ export function useMap() {
     const [layers, setLayers] = useState<MapInstruction[]>([]);
     const [isMapReady, setIsMapReady] = useState(false);
     const [isBrollPaused, setIsBrollPaused] = useState(false);
-    const brollCenterRef = useRef<[number, number] | null>(null);
+    const brollParamsRef = useRef<{lng: number, lat: number, zoom?: number, pitch?: number} | null>(null);
     const isBrollActiveRef = useRef(false);
 
     const setMapInstance = useCallback((map: mapboxgl.Map) => {
@@ -42,17 +42,21 @@ export function useMap() {
     );
 
     const addLayers = useCallback((instructions: MapInstruction[]) => {
-        setLayers((prev) => [...prev, ...instructions]);
+        const withIds = instructions.map(inst => ({
+            ...inst,
+            layerId: inst.layerId || `layer-${Date.now()}-${Math.random()}`
+        }));
+        setLayers((prev) => [...prev, ...withIds]);
     }, []);
 
     const clearLayers = useCallback(() => {
         setLayers([]);
     }, []);
 
-    const startBroll = useCallback((lng: number, lat: number) => {
+    const startBroll = useCallback((lng: number, lat: number, zoom?: number, pitch?: number) => {
         if (mapRef.current) {
-            brollCenterRef.current = [lng, lat];
-            startBrollAnimation(mapRef.current, lng, lat);
+            brollParamsRef.current = { lng, lat, zoom, pitch };
+            startBrollAnimation(mapRef.current, lng, lat, zoom, pitch);
             isBrollActiveRef.current = true;
             setIsBrollPaused(false);
         }
@@ -65,8 +69,9 @@ export function useMap() {
     }, []);
 
     const resumeBroll = useCallback(() => {
-        if (mapRef.current && brollCenterRef.current) {
-            startBrollAnimation(mapRef.current, brollCenterRef.current[0], brollCenterRef.current[1]);
+        if (mapRef.current && brollParamsRef.current) {
+            const { lng, lat, zoom, pitch } = brollParamsRef.current;
+            startBrollAnimation(mapRef.current, lng, lat, zoom, pitch);
             isBrollActiveRef.current = true;
             setIsBrollPaused(false);
         }
@@ -76,18 +81,24 @@ export function useMap() {
         const map = mapRef.current;
         if (!map) return;
 
-        const handleMoveStart = (e: any) => {
-            if (e.originalEvent && isBrollActiveRef.current) {
+        const handleUserInput = () => {
+            if (isBrollActiveRef.current) {
                 stopBrollAnimation();
                 isBrollActiveRef.current = false;
                 setIsBrollPaused(true);
             }
         };
 
-        map.on("movestart", handleMoveStart);
+        // Listen to raw interactions on the map canvas to reliably catch user intent
+        const container = map.getContainer();
+        container.addEventListener("mousedown", handleUserInput, { passive: true });
+        container.addEventListener("touchstart", handleUserInput, { passive: true });
+        container.addEventListener("wheel", handleUserInput, { passive: true });
 
         return () => {
-            map.off("movestart", handleMoveStart);
+            container.removeEventListener("mousedown", handleUserInput);
+            container.removeEventListener("touchstart", handleUserInput);
+            container.removeEventListener("wheel", handleUserInput);
         };
     }, [isMapReady]);
 
