@@ -70,6 +70,23 @@ const climateTermSchema = z.object({
     definition: z.string(),
 });
 
+/* ────────── Affected Sector ────────── */
+
+const affectedSectorSchema = z.object({
+    sector: z.enum([
+        "Residential",
+        "Commercial",
+        "Industrial",
+        "Institutional",
+        "Central Business District",
+        "Mixed Use",
+        "Green/Open Space"
+    ]),
+    explanation: z.string(),
+    cameraTarget: cameraTargetSchema.optional(),
+    mapInstructions: z.array(mapInstructionSchema),
+});
+
 /* ────────── Decision Result (from /api/decision) ────────── */
 
 export const decisionResultSchema = z.object({
@@ -80,6 +97,7 @@ export const decisionResultSchema = z.object({
     newScore: z.number().int().min(0).max(100),
     satisfactionDelta: z.number().int().min(-20).max(20),
     newSatisfaction: z.number().int().min(0).max(100),
+    affectedSectors: z.array(affectedSectorSchema).min(1),
     mapInstructions: z.array(mapInstructionSchema),
     explanation: z.string(),
     climateTerms: z.array(climateTermSchema),

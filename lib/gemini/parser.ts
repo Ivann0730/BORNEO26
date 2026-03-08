@@ -20,7 +20,12 @@ export async function parseGeminiJson<T>(
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
-            const result = await geminiModel.generateContent(prompt);
+            const result = await geminiModel.generateContent({
+                contents: [{ role: "user", parts: [{ text: prompt }] }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                },
+            });
             const text = result.response.text();
             const cleaned = stripMarkdownFences(text);
             const parsed = JSON.parse(cleaned);

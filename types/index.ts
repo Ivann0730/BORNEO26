@@ -63,6 +63,14 @@ export interface ClimateTerm {
   definition: string;
 }
 
+/* ─────────────────── Affected Sector ───────────────────── */
+export interface AffectedSector {
+  sector: "Residential" | "Commercial" | "Industrial" | "Institutional" | "Central Business District" | "Mixed Use" | "Green/Open Space";
+  explanation: string;
+  cameraTarget?: CameraTarget;
+  mapInstructions: MapInstruction[];
+}
+
 /* ─────────────────── Decision Result ─────────────────────── */
 export interface DecisionResult {
   round: number;
@@ -72,6 +80,7 @@ export interface DecisionResult {
   newScore: number;
   satisfactionDelta: number;
   newSatisfaction: number;
+  affectedSectors: AffectedSector[];
   mapInstructions: MapInstruction[];
   explanation: string;
   climateTerms: ClimateTerm[];

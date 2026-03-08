@@ -7,9 +7,11 @@ import type { ClimateTerm } from "@/types";
 interface ExplanationPanelProps {
     explanation: string;
     climateTerms: ClimateTerm[];
-    alternativeDecision: string;
+    alternativeDecision?: string;
     onContinue: () => void;
     isLastRound: boolean;
+    sectorName?: string;
+    stepInfo?: { current: number; total: number };
 }
 
 function highlightTerms(text: string, terms: ClimateTerm[]) {
@@ -49,15 +51,24 @@ export default function ExplanationPanel({
     alternativeDecision,
     onContinue,
     isLastRound,
+    sectorName,
+    stepInfo,
 }: ExplanationPanelProps) {
     return (
         <div className="flex flex-col gap-4 w-full max-w-sm mx-auto sm:max-w-md animate-in slide-in-from-bottom-4 duration-500">
             <div className="rounded-xl border border-border bg-card p-4">
-                <div className="flex items-start gap-2 mb-2">
-                    <MessageCircle className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                    <span className="text-xs font-semibold text-primary uppercase tracking-wider">
-                        What happened
-                    </span>
+                <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-start gap-2">
+                        <MessageCircle className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                        <span className="text-xs font-semibold text-primary uppercase tracking-wider">
+                            {sectorName ? `Sector: ${sectorName}` : "What happened overall"}
+                        </span>
+                    </div>
+                    {stepInfo && (
+                        <span className="text-xs font-medium text-muted-foreground">
+                            {stepInfo.current} / {stepInfo.total}
+                        </span>
+                    )}
                 </div>
                 <p className="text-sm leading-relaxed">
                     {highlightTerms(explanation, climateTerms)}
@@ -79,7 +90,11 @@ export default function ExplanationPanel({
                 onClick={onContinue}
                 className="flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-all hover:brightness-110 active:scale-95"
             >
-                {isLastRound ? "See Your Report" : "Next Decision"}
+                {stepInfo?.current !== stepInfo?.total
+                    ? "Next Effect"
+                    : isLastRound
+                    ? "See Your Report"
+                    : "Next Decision"}
                 <ArrowRight className="h-4 w-4" />
             </button>
         </div>
