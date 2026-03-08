@@ -15,6 +15,8 @@ import ScenarioPanel from "@/components/sim/ScenarioPanel";
 import SimDecisionUI from "./SimDecisionUI";
 import DeckGLOverlay from "@/components/map/DeckGLOverlay";
 import ZoneLegend from "@/components/sim/ZoneLegend";
+import TrafficControls from "@/components/traffic/TrafficControls";
+import TrafficLegend from "@/components/traffic/TrafficLegend";
 import { Loader2, Play } from "lucide-react";
 
 
@@ -70,6 +72,9 @@ export default function SimPage() {
                 });
                 if (!res.ok) throw new Error("Analyze failed");
                 const scenario = await res.json();
+
+                // Start cinematic intro sequence
+                map.traffic.updateConfig({ speedMultiplier: 0.5, globalWidth: 4 });
 
                 // BUG-03: fly to scenario cameraTarget (resolved coordinates), not user click
                 map.flyTo(scenario.cameraTarget, 3000);
@@ -136,15 +141,22 @@ export default function SimPage() {
         <div className="relative w-full h-screen overflow-hidden">
             <Navbar />
 
-            {/* Map fills the screen */}
-            <div className="absolute inset-0">
+            <div className="absolute inset-0 z-0">
                 <MapCanvas
                     onMapReady={map.setMapInstance}
                     onClick={handleMapClick}
                     isSimulationActive={isSimulationActive}
                 />
-                <DeckGLOverlay map={map.mapRef.current} layers={map.deckLayers} />
             </div>
+
+            {/* Traffic controls + legend */}
+            <TrafficControls
+                state={map.traffic.state}
+                zoom={Math.round(map.mapRef.current?.getZoom() ?? 0)}
+                onConfigChange={map.traffic.updateConfig}
+                onToggle={map.traffic.toggle}
+            />
+            <TrafficLegend config={map.traffic.state.config} />
 
             {/* Resume B-Roll Button */}
             {map.isBrollPaused && sim.step !== "complete" && (
@@ -216,12 +228,16 @@ export default function SimPage() {
                     </div>
                 )}
 
-                {/* Error */}
                 {sim.error && (
                     <div className="pointer-events-auto fixed bottom-4 left-4 right-4 mx-auto max-w-sm rounded-xl bg-destructive/10 border border-destructive/30 p-3 text-sm text-destructive text-center">
                         {sim.error}
                     </div>
                 )}
+            </div>
+
+            {/* DeckGL goes strictly ON TOP of UI so traffic can flow over elements */}
+            <div className="absolute inset-0 z-[2000] pointer-events-none">
+                <DeckGLOverlay map={map.mapRef.current} layers={map.deckLayers} />
             </div>
         </div>
     );

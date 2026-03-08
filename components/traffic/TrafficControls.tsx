@@ -190,11 +190,11 @@ export default function TrafficControls({
         {/* Global Width */}
         <SliderRow
           label="Width"
-          value={config.globalWidth ?? 4}
+          value={config.globalWidth ?? 8}
           min={1}
           max={10}
           step={1}
-          display={`${config.globalWidth ?? 4}px`}
+          display={`${config.globalWidth ?? 8}px`}
           onChange={(v) =>
             onConfigChange({ globalWidth: v })
           }

@@ -97,10 +97,10 @@ export function getSchemeColors(
 
 export const DEFAULT_CONFIG: TrafficConfig = {
   density: 0.6,
-  speedMultiplier: 0.5,
+  speedMultiplier: 1,
   trailLength: 800,
   colorScheme: 'neon-green',
   roadClasses: ['motorway', 'trunk', 'primary', 'secondary', 'tertiary', 'street'],
   loopDurationMs: 8000,
-  globalWidth: 4,
+  globalWidth: 8,
 };
