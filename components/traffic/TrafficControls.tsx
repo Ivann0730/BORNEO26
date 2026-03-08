@@ -56,7 +56,7 @@ export default function TrafficControls({
       <button
         id="traffic-controls-toggle"
         onClick={() => setExpanded(true)}
-        className="fixed bottom-6 right-6 z-[1100] w-11 h-11 rounded-full bg-card/90 backdrop-blur-md border border-border shadow-xl flex items-center justify-center hover:scale-110 transition-transform"
+        className="fixed bottom-24 md:bottom-6 left-6 z-[1100] w-11 h-11 rounded-full bg-card/90 backdrop-blur-md border border-border shadow-xl flex items-center justify-center hover:scale-110 transition-transform"
         title="Traffic Controls"
       >
         <Car className="w-5 h-5 text-primary" />
@@ -65,7 +65,7 @@ export default function TrafficControls({
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-[1100] w-72 rounded-2xl bg-card/90 backdrop-blur-md border border-border shadow-xl overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-200">
+    <div className="fixed bottom-24 md:bottom-6 left-6 z-[1100] w-72 rounded-2xl bg-card/90 backdrop-blur-md border border-border shadow-xl overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-200">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-border">
         <span className="text-sm font-semibold text-foreground">

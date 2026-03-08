@@ -4,11 +4,13 @@ import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
 const ZONE_TYPES = [
-    { label: "Affected Residents", color: "#ef4444" },
-    { label: "Industrial/Business", color: "#f59e0b" },
-    { label: "Environmental", color: "#22c55e" },
-    { label: "Government", color: "#3b82f6" },
-    { label: "NGO/Community", color: "#a855f7" },
+    { label: "Residential", color: "#ef4444" },
+    { label: "Commercial", color: "#3b82f6" },
+    { label: "Industrial", color: "#f59e0b" },
+    { label: "Institutional", color: "#a855f7" },
+    { label: "Business District", color: "#eab308" },
+    { label: "Mixed Use", color: "#ec4899" },
+    { label: "Open Space", color: "#22c55e" },
 ];
 
 export default function ZoneLegend() {

@@ -5,13 +5,11 @@ import { Lightbulb, ChevronDown } from "lucide-react";
 
 interface HintButtonProps {
     hints: string[];
-    onSelect: (hint: string) => void;
     onHintUsed?: () => void;
 }
 
 export default function HintButton({
     hints,
-    onSelect,
     onHintUsed,
 }: HintButtonProps) {
     const [isOpen, setIsOpen] = useState(false);
@@ -42,19 +40,23 @@ export default function HintButton({
 
             <div
                 className={`overflow-hidden transition-all duration-300 ease-out ${
-                    isOpen ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
+                    isOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
                 }`}
             >
-                <div className="flex flex-wrap gap-2 pt-1">
-                    {hints.map((hint, i) => (
-                        <button
-                            key={i}
-                            onClick={() => onSelect(hint)}
-                            className="rounded-full border border-border bg-card px-3 py-1.5 text-xs transition-all hover:border-primary/50 hover:bg-primary/5 active:scale-95"
-                        >
-                            {hint}
-                        </button>
-                    ))}
+                <div className="flex flex-col gap-2 pt-1 border-t border-border mt-3">
+                    <p className="text-xs text-muted-foreground italic mb-1">
+                        Think about approaches like:
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                        {hints.map((hint, i) => (
+                            <div
+                                key={i}
+                                className="rounded-full border border-border bg-card px-3 py-1.5 text-xs text-foreground/90 cursor-default select-text"
+                            >
+                                {hint}
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </div>
         </div>

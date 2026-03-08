@@ -138,6 +138,10 @@ export function useSimulation() {
         });
     }, []);
 
+    const endSimulationEarly = useCallback(() => {
+        setState((prev) => ({ ...prev, step: "complete" }));
+    }, []);
+
     const setReportSlug = useCallback((slug: string) => {
         setState((prev) => ({ ...prev, reportSlug: slug }));
     }, []);
@@ -164,6 +168,7 @@ export function useSimulation() {
         startDecisions,
         addDecision,
         advanceAfterExplanation,
+        endSimulationEarly,
         recordHintUsed,
         setReportSlug,
         setLoading,
