@@ -3,7 +3,7 @@ import { decisionBodySchema } from "@/lib/validations/api";
 import { buildDecisionPrompt } from "@/lib/gemini/prompts";
 import { parseGeminiJson } from "@/lib/gemini/parser";
 import { decisionResultSchema } from "@/lib/gemini/schemas";
-import type { DecisionResult } from "@/types";
+import type { DecisionResult, Scenario } from "@/types";
 
 export async function POST(request: NextRequest) {
     try {
@@ -17,32 +17,42 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const { scenario, decisionText, round, previousScore, history } =
-            parsed.data;
+        const {
+            scenario,
+            decisionText,
+            round,
+            previousScore,
+            previousSatisfaction,
+            history,
+        } = parsed.data;
 
         const fullScenario = {
             ...scenario,
             headline: scenario.headline,
             location: scenario.location,
-        };
+        } as Scenario;
 
         const prompt = buildDecisionPrompt(
             fullScenario,
             decisionText,
             round,
             previousScore,
+            previousSatisfaction,
             history as DecisionResult[]
         );
 
         const result = await parseGeminiJson(prompt, decisionResultSchema);
 
+        // Clamp values server-side
+        const clampedScoreDelta = Math.max(-30, Math.min(30, result.scoreDelta));
+        const clampedSatDelta = Math.max(-20, Math.min(20, result.satisfactionDelta ?? 0));
+
         const clamped = {
             ...result,
-            scoreDelta: Math.max(-30, Math.min(30, result.scoreDelta)),
-            newScore: Math.max(
-                0,
-                Math.min(100, previousScore + result.scoreDelta)
-            ),
+            scoreDelta: clampedScoreDelta,
+            newScore: Math.max(0, Math.min(100, previousScore + clampedScoreDelta)),
+            satisfactionDelta: clampedSatDelta,
+            newSatisfaction: Math.max(0, Math.min(100, previousSatisfaction + clampedSatDelta)),
         } as DecisionResult;
 
         return NextResponse.json(clamped);

@@ -1,4 +1,10 @@
-import type { Location, ClimateHeadline, DecisionResult, Scenario } from "@/types";
+import type {
+    Location,
+    ClimateHeadline,
+    DecisionResult,
+    Scenario,
+} from "@/types";
+import { MAX_DECISIONS } from "@/lib/constants";
 
 export function buildAnalyzePrompt(
     location: Location,
@@ -32,7 +38,8 @@ Return ONLY a valid JSON object matching this exact structure:
 }
 
 Rules:
-- affectedArea polygon coordinates must be near [${location.lng}, ${location.lat}]
+- affectedArea polygon coordinates must be near [${location.lng}, ${location.lat}] and within 0.05 degrees
+- CRITICAL: Ensure coordinates are placed logically (e.g., on actual land for city issues). Do not randomly place terrestrial zones in the middle of the ocean or water bodies.
 - initialScore must be between 30 and 60
 - hints must be 3 short, helpful suggestions a 13-year-old would understand
 - Write at a Grade 7-8 reading level. Be engaging and solution-focused, not scary or doom-and-gloom.
@@ -44,6 +51,7 @@ export function buildDecisionPrompt(
     decisionText: string,
     round: number,
     previousScore: number,
+    previousSatisfaction: number,
     history: DecisionResult[]
 ): string {
     return `You are a climate policy simulator for Grade 6-10 students in ASEAN.
@@ -51,8 +59,9 @@ export function buildDecisionPrompt(
 Scenario: ${scenario.context}
 Location: ${scenario.location.name}
 Current score: ${previousScore}/100
-Round: ${round} of 3
-Decision history: ${JSON.stringify(history)}
+Satisfaction of affected people: ${previousSatisfaction}/100
+Round: ${round} of ${MAX_DECISIONS}
+Decision history: ${JSON.stringify(history.map((h) => h.interpretation))}
 
 The student just said: "${decisionText}"
 
@@ -62,7 +71,30 @@ Interpret their decision and return ONLY a valid JSON object:
   "userInput": "${decisionText}",
   "interpretation": "1 sentence describing what you understood their decision to be",
   "scoreDelta": (integer between -30 and +30),
-  "newScore": (previousScore + scoreDelta, clamped to 0-100),
+  "newScore": (previousScore + scoreDelta, clamped 0-100),
+  "satisfactionDelta": (integer between -20 and +20, represents affected people's reaction),
+  "newSatisfaction": (previousSatisfaction + satisfactionDelta, clamped 0-100),
+  "affectedSectors": [
+    {
+      "sector": "one of: Residential, Commercial, Industrial, Institutional, Central Business District, Mixed Use, Green/Open Space",
+      "explanation": "2-3 sentences explaining how this specific sector is affected.",
+      "cameraTarget": {
+        "center": [${scenario.location.lng}, ${scenario.location.lat}],
+        "zoom": 17,
+        "pitch": 55,
+        "bearing": 20
+      },
+      "mapInstructions": [
+        {
+          "type": "add_layer",
+          "layerType": "polygon",
+          "layerId": "sector-layer-id",
+          "geoJson": { "type": "Feature", "geometry": {...}, "properties": {...} },
+          "color": "#hexcolor"
+        }
+      ]
+    }
+  ],
   "mapInstructions": [
     {
       "type": "add_layer",
@@ -74,11 +106,11 @@ Interpret their decision and return ONLY a valid JSON object:
       "label": "description"
     }
   ],
-  "explanation": "2-3 sentences explaining the consequence at Grade 7-8 reading level. Be honest about tradeoffs.",
+  "explanation": "2-3 sentences overall summary at Grade 7-8 reading level. Honest about tradeoffs.",
   "climateTerms": [
     { "term": "term used in explanation", "definition": "simple definition for a 13-year-old" }
   ],
-  "alternativeDecision": "1 sentence describing a different approach they could have taken",
+  "alternativeDecision": "1 sentence nudging the student to think about a different direction they could have taken without explicitly giving them the exact answer",
   "alternativeMapInstructions": [
     {
       "type": "add_layer",
@@ -92,10 +124,18 @@ Interpret their decision and return ONLY a valid JSON object:
 
 Rules:
 - scoreDelta MUST be between -30 and +30
-- Provide 2-4 mapInstructions showing the visual effect of the decision
-- All coordinates must be near [${scenario.location.lng}, ${scenario.location.lat}]
+- satisfactionDelta MUST be between -20 and +20
+- Provide 1-3 affectedSectors showing the specific impact on different city zones
+- The cameraTarget in affectedSectors should zoom in closely to the affected area
+- Provide 1-2 mapInstructions in affectedSectors to highlight the area
+- CRITICAL: For affectedSectors, you MUST use these exact colors for the mapInstructions: Residential (#ef4444), Commercial (#3b82f6), Industrial (#f59e0b), Institutional (#a855f7), Central Business District (#eab308), Mixed Use (#ec4899), Green/Open Space (#22c55e).
+- Provide 1-2 overall mapInstructions showing the visual effect of the decision for the whole city
+- All coordinates must be tightly clustered near [${scenario.location.lng}, ${scenario.location.lat}] (within 0.02 degrees)
+- CRITICAL: Ensure coordinates are placed logically. Terrestrial sectors (Residential, Commercial, Industrial, etc.) MUST be placed on land. Do not hallucinate coordinates in the middle of the ocean or water bodies!
+- Only place coordinates on water if the specific sector or issue is explicitly marine-based.
 - Decisions are morally complex: every choice has real tradeoffs
 - Do not reward or punish obviously: ambiguous is better
+- Score should never feel gameable — no obvious "win" path
 - Write at Grade 7-8 reading level, engaging not scary
 - Return ONLY JSON, no explanation, no markdown`;
 }
@@ -108,7 +148,7 @@ export function buildVerdictPrompt(
 ): string {
     const decisionSummary = decisions
         .map((d) => d.interpretation)
-        .join(" -> ");
+        .join(" → ");
 
     return `A Grade 8 student just completed a climate policy simulation.
 
@@ -121,4 +161,28 @@ Write a single sentence verdict (max 20 words) summarizing their performance.
 Be encouraging but honest. Use simple language.
 
 Return ONLY the verdict sentence, no JSON, no quotes, no explanation.`;
+}
+
+export function buildLocationResolvePrompt(
+    headlineTitle: string,
+    headlineDescription: string,
+    fallbackLat: number,
+    fallbackLng: number
+): string {
+    return `Extract the specific geographic location mentioned in this climate news headline.
+
+Headline: ${headlineTitle}
+Description: ${headlineDescription}
+
+Return ONLY a valid JSON object:
+{
+  "lat": (latitude as a number),
+  "lng": (longitude as a number),
+  "name": "specific place name"
+}
+
+If you cannot determine a specific location, use these fallback coordinates:
+{ "lat": ${fallbackLat}, "lng": ${fallbackLng}, "name": "Unknown" }
+
+Return ONLY JSON, no explanation, no markdown.`;
 }

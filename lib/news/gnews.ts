@@ -13,6 +13,8 @@ const FALLBACK_HEADLINES: ClimateHeadline[] = [
         url: "https://cebudailynews.inquirer.net",
         publishedAt: "2025-01-15T00:00:00Z",
         locationTag: "Cebu, Philippines",
+        resolvedLat: 10.270399,
+        resolvedLng: 123.868957,
     },
     {
         id: "fallback-jakarta-flooding",

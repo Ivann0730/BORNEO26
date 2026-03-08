@@ -8,6 +8,11 @@ import type {
     Scenario,
     DecisionResult,
 } from "@/types";
+import {
+    MAX_DECISIONS,
+    INITIAL_SATISFACTION,
+    FAILSTATE_THRESHOLD,
+} from "@/lib/constants";
 
 interface SimulationState {
     step: SimulationStep;
@@ -18,9 +23,12 @@ interface SimulationState {
     decisions: DecisionResult[];
     currentRound: number;
     currentScore: number;
+    satisfactionScore: number;
+    hintsUsedRounds: number[];
     reportSlug: string | null;
     isLoading: boolean;
     error: string | null;
+    isFailed: boolean;
 }
 
 const initialState: SimulationState = {
@@ -32,9 +40,12 @@ const initialState: SimulationState = {
     decisions: [],
     currentRound: 1,
     currentScore: 50,
+    satisfactionScore: INITIAL_SATISFACTION,
+    hintsUsedRounds: [],
     reportSlug: null,
     isLoading: false,
     error: null,
+    isFailed: false,
 };
 
 export function useSimulation() {
@@ -51,11 +62,7 @@ export function useSimulation() {
     }, []);
 
     const setHeadlines = useCallback((headlines: ClimateHeadline[]) => {
-        setState((prev) => ({
-            ...prev,
-            headlines,
-            isLoading: false,
-        }));
+        setState((prev) => ({ ...prev, headlines, isLoading: false }));
     }, []);
 
     const selectHeadline = useCallback((headline: ClimateHeadline) => {
@@ -67,52 +74,76 @@ export function useSimulation() {
         }));
     }, []);
 
+
     const setScenario = useCallback((scenario: Scenario) => {
         setState((prev) => ({
             ...prev,
             scenario,
             currentScore: scenario.initialScore,
-            step: "scenario",
+            step: "scenario", // Advance straight to scenario instead of persona
             isLoading: false,
         }));
     }, []);
 
     const startDecisions = useCallback(() => {
-        setState((prev) => ({
-            ...prev,
-            step: "decision",
-        }));
+        setState((prev) => ({ ...prev, step: "decision" }));
     }, []);
 
+    // BUG-04 fix: addDecision does NOT auto-advance to complete.
+    // The sim page calls advanceAfterExplanation() after showing the explanation.
     const addDecision = useCallback((result: DecisionResult) => {
         setState((prev) => {
             const decisions = [...prev.decisions, result];
-            const nextRound = prev.currentRound + 1;
-            const isComplete = nextRound > 3;
+            const newSatisfaction = result.newSatisfaction;
+
+            // Check failstate
+            const isFailed = newSatisfaction <= FAILSTATE_THRESHOLD;
 
             return {
                 ...prev,
                 decisions,
                 currentScore: result.newScore,
-                currentRound: isComplete ? prev.currentRound : nextRound,
-                step: isComplete ? "complete" : "decision",
+                satisfactionScore: newSatisfaction,
                 isLoading: false,
+                isFailed,
             };
         });
     }, []);
 
-    const endEarly = useCallback(() => {
-        setState((prev) => ({
-            ...prev,
-            step: "complete",
-        }));
+    // Called after the explanation panel is dismissed
+    const advanceAfterExplanation = useCallback(() => {
+        setState((prev) => {
+            const completedRounds = prev.decisions.length;
+            const isComplete =
+                completedRounds >= MAX_DECISIONS || prev.isFailed;
+
+            if (isComplete) {
+                return { ...prev, step: "complete" };
+            }
+
+            return {
+                ...prev,
+                currentRound: completedRounds + 1,
+            };
+        });
+    }, []);
+
+    const recordHintUsed = useCallback((round: number) => {
+        setState((prev) => {
+            if (prev.hintsUsedRounds.includes(round)) return prev;
+            return {
+                ...prev,
+                hintsUsedRounds: [...prev.hintsUsedRounds, round],
+            };
+        });
+    }, []);
+
+    const endSimulationEarly = useCallback(() => {
+        setState((prev) => ({ ...prev, step: "complete" }));
     }, []);
 
     const setReportSlug = useCallback((slug: string) => {
-        setState((prev) => ({
-            ...prev,
-            reportSlug: slug,
-        }));
+        setState((prev) => ({ ...prev, reportSlug: slug }));
     }, []);
 
     const setLoading = useCallback((isLoading: boolean) => {
@@ -129,13 +160,16 @@ export function useSimulation() {
 
     return {
         ...state,
+        maxDecisions: MAX_DECISIONS,
         setLocation,
         setHeadlines,
         selectHeadline,
         setScenario,
         startDecisions,
         addDecision,
-        endEarly,
+        advanceAfterExplanation,
+        endSimulationEarly,
+        recordHintUsed,
         setReportSlug,
         setLoading,
         setError,

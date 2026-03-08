@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MAX_DECISIONS } from "@/lib/constants";
 
 /* ────────── GeoJSON sub-schemas (lenient) ────────── */
 
@@ -69,14 +70,34 @@ const climateTermSchema = z.object({
     definition: z.string(),
 });
 
+/* ────────── Affected Sector ────────── */
+
+const affectedSectorSchema = z.object({
+    sector: z.enum([
+        "Residential",
+        "Commercial",
+        "Industrial",
+        "Institutional",
+        "Central Business District",
+        "Mixed Use",
+        "Green/Open Space"
+    ]),
+    explanation: z.string(),
+    cameraTarget: cameraTargetSchema.optional(),
+    mapInstructions: z.array(mapInstructionSchema),
+});
+
 /* ────────── Decision Result (from /api/decision) ────────── */
 
 export const decisionResultSchema = z.object({
-    round: z.number().int().min(1).max(3),
+    round: z.number().int().min(1).max(MAX_DECISIONS),
     userInput: z.string(),
     interpretation: z.string(),
     scoreDelta: z.number().int().min(-30).max(30),
     newScore: z.number().int().min(0).max(100),
+    satisfactionDelta: z.number().int().min(-20).max(20),
+    newSatisfaction: z.number().int().min(0).max(100),
+    affectedSectors: z.array(affectedSectorSchema).min(1),
     mapInstructions: z.array(mapInstructionSchema),
     explanation: z.string(),
     climateTerms: z.array(climateTermSchema),
@@ -85,3 +106,13 @@ export const decisionResultSchema = z.object({
 });
 
 export type DecisionResultResponse = z.infer<typeof decisionResultSchema>;
+
+/* ────────── Location Resolve (from Gemini) ────────── */
+
+export const locationResolveSchema = z.object({
+    lat: z.number().min(-90).max(90),
+    lng: z.number().min(-180).max(180),
+    name: z.string(),
+});
+
+export type LocationResolveResponse = z.infer<typeof locationResolveSchema>;

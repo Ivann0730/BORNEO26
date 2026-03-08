@@ -9,6 +9,7 @@ interface UseDecisionReturn {
         decisionText: string,
         round: number,
         previousScore: number,
+        previousSatisfaction: number,
         history: DecisionResult[]
     ) => Promise<DecisionResult | null>;
     isSubmitting: boolean;
@@ -25,6 +26,7 @@ export function useDecision(): UseDecisionReturn {
             decisionText: string,
             round: number,
             previousScore: number,
+            previousSatisfaction: number,
             history: DecisionResult[]
         ): Promise<DecisionResult | null> => {
             setIsSubmitting(true);
@@ -40,6 +42,7 @@ export function useDecision(): UseDecisionReturn {
                         decisionText,
                         round,
                         previousScore,
+                        previousSatisfaction,
                         history,
                     }),
                 });
