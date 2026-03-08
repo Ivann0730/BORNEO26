@@ -88,6 +88,13 @@ export interface DecisionResult {
   alternativeMapInstructions: MapInstruction[];
 }
 
+/* ─────────────────── Decision Evaluation ─────────────────── */
+export interface DecisionEvaluation {
+  status: "accepted" | "rejected" | "needs_more_info";
+  justification: string;
+  hint: string;
+}
+
 /* ─────────────────── Report Session ──────────────────────── */
 export interface ReportSession {
   slug: string;

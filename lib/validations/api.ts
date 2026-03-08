@@ -81,3 +81,11 @@ export const reportBodySchema = z.object({
     decisions: z.array(z.unknown()).min(1),
     userName: z.string().min(1).max(100),
 });
+
+/* ────────── /api/evaluate-decision body ────────── */
+
+export const evaluateDecisionBodySchema = z.object({
+    scenarioContext: z.string().min(1),
+    decisionText: z.string().min(1),
+});
+

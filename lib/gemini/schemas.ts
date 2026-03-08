@@ -116,3 +116,13 @@ export const locationResolveSchema = z.object({
 });
 
 export type LocationResolveResponse = z.infer<typeof locationResolveSchema>;
+
+/* ────────── Decision Evaluation (from /api/evaluate-decision) ────────── */
+
+export const decisionEvaluationSchema = z.object({
+    status: z.enum(["accepted", "rejected", "needs_more_info"]),
+    justification: z.string(),
+    hint: z.string(),
+});
+
+export type DecisionEvaluationResponse = z.infer<typeof decisionEvaluationSchema>;
