@@ -10,6 +10,8 @@ import {
 } from "@/lib/mapbox/camera";
 import type { CameraTarget, MapInstruction } from "@/types";
 import { buildLayers } from "@/lib/mapbox/layerBuilder";
+import { useTrafficSimulation } from "@/hooks/useTrafficSimulation";
+import { buildTrafficLayer } from "@/components/traffic/TrafficOverlay";
 
 export function useMap() {
     const mapRef = useRef<mapboxgl.Map | null>(null);
@@ -89,7 +91,15 @@ export function useMap() {
         };
     }, [isMapReady]);
 
-    const deckLayers = buildLayers(layers);
+    // Traffic simulation
+    const traffic = useTrafficSimulation(mapRef.current);
+
+    // Merge scenario layers with traffic layer
+    const scenarioLayers = buildLayers(layers);
+    const trafficLayer = buildTrafficLayer(traffic.state);
+    const deckLayers = trafficLayer
+        ? [...scenarioLayers, trafficLayer]
+        : scenarioLayers;
 
     return {
         mapRef,
@@ -105,5 +115,6 @@ export function useMap() {
         isBrollPaused,
         layers,
         deckLayers,
+        traffic,
     };
 }
