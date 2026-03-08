@@ -19,7 +19,6 @@ export async function POST(request: NextRequest) {
 
         const { location, headline } = parsed.data;
 
-        // BUG-03: Resolve actual coordinates from headline text
         let resolvedLat = headline.resolvedLat ?? location.lat;
         let resolvedLng = headline.resolvedLng ?? location.lng;
 
@@ -48,6 +47,11 @@ export async function POST(request: NextRequest) {
             headline: { ...headline, resolvedLat, resolvedLng },
             location: resolvedLocation,
         } as Scenario;
+
+        // Force camera to orbit the exact resolved coordinates rather than LLM hallucinations
+        if (scenario.cameraTarget) {
+            scenario.cameraTarget.center = [resolvedLng, resolvedLat];
+        }
 
         return NextResponse.json(scenario);
     } catch (error) {
