@@ -1,16 +1,16 @@
 import type {
-    Location,
-    ClimateHeadline,
-    DecisionResult,
-    Scenario,
+  Location,
+  ClimateHeadline,
+  DecisionResult,
+  Scenario,
 } from "@/types";
 import { MAX_DECISIONS } from "@/lib/constants";
 
 export function buildAnalyzePrompt(
-    location: Location,
-    headline: ClimateHeadline
+  location: Location,
+  headline: ClimateHeadline
 ): string {
-    return `You are a climate education assistant for middle school students in ASEAN.
+  return `You are a climate education assistant for middle school students in ASEAN.
 
 Given this location and news headline, generate a climate scenario object.
 
@@ -47,14 +47,14 @@ Rules:
 }
 
 export function buildDecisionPrompt(
-    scenario: Scenario,
-    decisionText: string,
-    round: number,
-    previousScore: number,
-    previousSatisfaction: number,
-    history: DecisionResult[]
+  scenario: Scenario,
+  decisionText: string,
+  round: number,
+  previousScore: number,
+  previousSatisfaction: number,
+  history: DecisionResult[]
 ): string {
-    return `You are a climate policy simulator for Grade 6-10 students in ASEAN.
+  return `You are a climate policy simulator for Grade 6-10 students in ASEAN.
 
 Scenario: ${scenario.context}
 Location: ${scenario.location.name}
@@ -141,16 +141,16 @@ Rules:
 }
 
 export function buildVerdictPrompt(
-    location: Location,
-    headline: ClimateHeadline,
-    finalScore: number,
-    decisions: DecisionResult[]
+  location: Location,
+  headline: ClimateHeadline,
+  finalScore: number,
+  decisions: DecisionResult[]
 ): string {
-    const decisionSummary = decisions
-        .map((d) => d.interpretation)
-        .join(" → ");
+  const decisionSummary = decisions
+    .map((d) => d.interpretation)
+    .join(" → ");
 
-    return `A Grade 8 student just completed a climate policy simulation.
+  return `A Grade 8 student just completed a climate policy simulation.
 
 Location: ${location.name}
 Issue: ${headline.title}
@@ -164,12 +164,12 @@ Return ONLY the verdict sentence, no JSON, no quotes, no explanation.`;
 }
 
 export function buildLocationResolvePrompt(
-    headlineTitle: string,
-    headlineDescription: string,
-    fallbackLat: number,
-    fallbackLng: number
+  headlineTitle: string,
+  headlineDescription: string,
+  fallbackLat: number,
+  fallbackLng: number
 ): string {
-    return `Extract the specific geographic location mentioned in this climate news headline.
+  return `Extract the specific geographic location mentioned in this climate news headline.
 
 Headline: ${headlineTitle}
 Description: ${headlineDescription}
@@ -184,5 +184,39 @@ Return ONLY a valid JSON object:
 If you cannot determine a specific location, use these fallback coordinates:
 { "lat": ${fallbackLat}, "lng": ${fallbackLng}, "name": "Unknown" }
 
+Return ONLY JSON, no explanation, no markdown.`;
+}
+
+export function buildDecisionEvaluationPrompt(
+  scenarioContext: string,
+  decisionText: string
+): string {
+  return `You are an educational evaluator for an interactive climate policy simulation for Grade 8 students.
+Before simulating a user's decision, you must evaluate if their input is sensible, relevant to the scenario, and demonstrates critical thinking.
+
+Scenario Context: ${scenarioContext}
+User's Decision: "${decisionText}"
+
+Evaluate the decision and return ONLY a valid JSON object matching this structure:
+{
+  "status": "accepted" | "rejected" | "needs_more_info",
+  "justification": "A short, encouraging explanation of why their decision was accepted, rejected, or needs more info.",
+  "hint": "If rejected or needs more info, provide a helpful hint to guide them. If accepted, this can be an empty string."
+}
+
+Rules for status "rejected":
+- The decision is completely vague or nonsensical (e.g., "idk", "asdfasdf", "do nothing", "i don't care").
+- The decision is malicious, violent, or wildly inappropriate.
+- The decision has absolutely nothing to do with the climate scenario or city management.
+
+Rules for status "needs_more_info":
+- The decision is sensible and well-intentioned, but too vague to simulate (e.g., "help the people", "stop climate change", "fix the water").
+- When using this status, the "hint" MUST ask the student for specific policy actions or methods to achieve their goal.
+
+Rules for status "accepted":
+- The decision attempts to address the scenario with a specific action or policy, even if it's not the "best" choice. Allow for creative or unconventional approaches as long as they show specific thought.
+- The decision is a valid policy or action (e.g., "build a seawall", "educate people about recycling", "tax carbon emissions").
+
+Ensure "justification" and "hint" are written at a Grade 7-8 reading level.
 Return ONLY JSON, no explanation, no markdown.`;
 }
