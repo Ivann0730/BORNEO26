@@ -21,18 +21,62 @@ export default function SimDecisionUI({ sim, decision, map }: SimDecisionUIProps
     const [showExplanation, setShowExplanation] = useState(false);
     const [currentSectorIndex, setCurrentSectorIndex] = useState(-1);
 
-    // Evaluation state
     const { evaluateDecision, isEvaluating } = useEvaluateDecision();
     const [rejection, setRejection] = useState<DecisionEvaluation | null>(null);
+    const [pendingBudgetDecision, setPendingBudgetDecision] = useState<{ text: string, cost: number } | null>(null);
+    const [inputMode, setInputMode] = useState<"guided" | "freeform">(sim.currentRound === 1 ? "guided" : "freeform");
+
+    // Extracted simulation execution out of handleDecisionSubmit so it can be called from override
+    const executeSimulateDecision = useCallback(async (text: string, capitalCost: number) => {
+        sim.setLoading(true);
+        const result = await decision.submitDecision(
+            sim.scenario!,
+            text,
+            sim.currentRound,
+            sim.currentScore,
+            sim.satisfactionScore,
+            sim.decisions
+        );
+        if (result) {
+            sim.addDecision(result, capitalCost);
+            setLastResult(result);
+
+            if (result.affectedSectors && result.affectedSectors.length > 0) {
+                setCurrentSectorIndex(0);
+                const firstSector = result.affectedSectors[0];
+                map.addLayers(firstSector.mapInstructions);
+                if (firstSector.cameraTarget) {
+                    map.startBroll(
+                        firstSector.cameraTarget.center[0],
+                        firstSector.cameraTarget.center[1],
+                        firstSector.cameraTarget.zoom,
+                        firstSector.cameraTarget.pitch
+                    );
+                }
+            } else {
+                setCurrentSectorIndex(-1);
+                map.addLayers(result.mapInstructions);
+            }
+
+            setShowExplanation(true);
+        } else {
+            sim.setLoading(false);
+        }
+    }, [sim, decision, map]);
 
     /* ─── submit decision ─── */
     const handleDecisionSubmit = useCallback(
-        async (text: string) => {
+        async (text: string, overrideCost?: boolean) => {
             if (!sim.scenario) return;
 
-            // Clear previous rejection
             setRejection(null);
 
+            if (overrideCost && pendingBudgetDecision) {
+                await executeSimulateDecision(pendingBudgetDecision.text, pendingBudgetDecision.cost);
+                return;
+            }
+
+            setPendingBudgetDecision(null);
             sim.setLoading(true);
 
             // 1. Evaluate the decision's quality first
@@ -43,51 +87,21 @@ export default function SimDecisionUI({ sim, decision, map }: SimDecisionUIProps
 
             if (!evaluation) {
                 // If evaluation request failed entirely, fallback to continuing
-                // but we should proceed with submitting the decision
             } else if (evaluation.status !== "accepted") {
                 // Decision is rejected or needs info! Show the hint and stop.
                 setRejection(evaluation);
                 sim.setLoading(false);
                 return;
+            } else if (evaluation.capitalCost && evaluation.capitalCost > sim.policyCapital) {
+                setPendingBudgetDecision({ text, cost: evaluation.capitalCost });
+                sim.setLoading(false);
+                return;
             }
 
             // 2. Decision accepted, proceed to simulate
-            const result = await decision.submitDecision(
-                sim.scenario,
-                text,
-                sim.currentRound,
-                sim.currentScore,
-                sim.satisfactionScore,
-                sim.decisions
-            );
-            if (result) {
-                sim.addDecision(result);
-                // Start with the first sector
-                setLastResult(result);
-
-                if (result.affectedSectors && result.affectedSectors.length > 0) {
-                    setCurrentSectorIndex(0);
-                    const firstSector = result.affectedSectors[0];
-                    map.addLayers(firstSector.mapInstructions);
-                    if (firstSector.cameraTarget) {
-                        map.startBroll(
-                            firstSector.cameraTarget.center[0],
-                            firstSector.cameraTarget.center[1],
-                            firstSector.cameraTarget.zoom,
-                            firstSector.cameraTarget.pitch
-                        );
-                    }
-                } else {
-                    setCurrentSectorIndex(-1);
-                    map.addLayers(result.mapInstructions);
-                }
-
-                setShowExplanation(true);
-            } else {
-                sim.setLoading(false);
-            }
+            await executeSimulateDecision(text, evaluation?.capitalCost || 0);
         },
-        [sim, decision, map, evaluateDecision]
+        [sim, evaluateDecision, pendingBudgetDecision, executeSimulateDecision]
     );
 
     /* ─── continue after explanation (BUG-04 fix) ─── */
@@ -158,6 +172,7 @@ export default function SimDecisionUI({ sim, decision, map }: SimDecisionUIProps
                 previousScore={prevScore}
                 satisfaction={sim.satisfactionScore}
                 round={sim.currentRound}
+                policyCapital={sim.policyCapital}
             />
 
             {/* Side panel / bottom sheet */}
@@ -224,9 +239,44 @@ export default function SimDecisionUI({ sim, decision, map }: SimDecisionUIProps
                             </div>
                         )}
 
+                        {pendingBudgetDecision && (
+                            <div className="w-full max-w-sm mx-auto sm:max-w-md bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 mb-2 animate-in fade-in slide-in-from-bottom-2">
+                                <div className="flex flex-col gap-3">
+                                    <div className="flex items-start gap-3">
+                                        <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                                        <div className="space-y-1">
+                                            <p className="text-sm font-medium text-amber-700 dark:text-amber-500">Over Budget!</p>
+                                            <p className="text-sm text-foreground/80 leading-snug">
+                                                This decision requires <span className="font-semibold text-amber-600">{pendingBudgetDecision.cost} Policy Capital</span>, but you only have <span className="font-semibold">{sim.policyCapital}</span> left.
+                                            </p>
+                                            <p className="text-xs text-muted-foreground mt-1">
+                                                You can override this, but a negative balance may reduce community satisfaction.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-2 justify-end mt-1">
+                                        <button
+                                            onClick={() => setPendingBudgetDecision(null)}
+                                            className="px-3 py-1.5 text-xs font-semibold rounded-lg text-foreground hover:bg-muted transition-colors border border-border"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            onClick={() => handleDecisionSubmit(pendingBudgetDecision.text, true)}
+                                            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-500 text-white hover:bg-amber-600 transition-colors shadow-sm"
+                                        >
+                                            Submit Anyway
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         <DecisionInput
                             onSubmit={handleDecisionSubmit}
                             isSubmitting={decision.isSubmitting || sim.isLoading || isEvaluating}
+                            inputMode={inputMode}
+                            onInputModeChange={setInputMode}
                         />
                         {sim.currentRound >= 2 && (
                             <button

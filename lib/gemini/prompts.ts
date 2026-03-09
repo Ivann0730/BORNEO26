@@ -201,7 +201,8 @@ Evaluate the decision and return ONLY a valid JSON object matching this structur
 {
   "status": "accepted" | "rejected" | "needs_more_info",
   "justification": "A short, encouraging explanation of why their decision was accepted, rejected, or needs more info.",
-  "hint": "If rejected or needs more info, provide a helpful hint to guide them. If accepted, this can be an empty string."
+  "hint": "If rejected or needs more info, provide a helpful hint to guide them. If accepted, this can be an empty string.",
+  "capitalCost": (integer 1-40)
 }
 
 Rules for status "rejected":
@@ -216,7 +217,41 @@ Rules for status "needs_more_info":
 Rules for status "accepted":
 - The decision attempts to address the scenario with a specific action or policy, even if it's not the "best" choice. Allow for creative or unconventional approaches as long as they show specific thought.
 - The decision is a valid policy or action (e.g., "build a seawall", "educate people about recycling", "tax carbon emissions").
+- You MUST provide a \`capitalCost\` between 1 and 40 for accepted decisions. Estimate cost based on scope: hyper-local low-cost actions score ~5–10, city-wide structural reforms score ~25–40.
 
 Ensure "justification" and "hint" are written at a Grade 7-8 reading level.
 Return ONLY JSON, no explanation, no markdown.`;
+}
+
+export function buildStakeholderReactPrompt(
+  sectorId: string,
+  personaName: string,
+  personaRole: string,
+  decision: string,
+  sectorOutcome: string,
+  currentApproval: number
+): string {
+  return `You are simulating a real person affected by climate policy.
+Your name is ${personaName} and your role is ${personaRole} in the ${sectorId} sector.
+
+The city just made this decision:
+"${decision}"
+
+Here is how your sector was affected:
+"${sectorOutcome}"
+
+Your current approval rating of the city's policies is ${currentApproval}/100.
+
+Return ONLY a valid JSON object:
+{
+  "quote": "A specific, emotionally grounded quote between 15-30 words. Avoid generic statements. Reference a concrete impact (e.g. 'My irrigation costs just doubled' not 'This will hurt farmers'). Speak from the first person.",
+  "approvalDelta": (integer between -25 and +25 based on how the decision affected you)
+}
+
+Rules:
+- Be authentic and realistic to your role.
+- If the outcome is good for your sector, express relief or optimism, and approvalDelta should be positive.
+- If the outcome is bad, express frustration, fear, or anger, and approvalDelta should be negative.
+- The magnitude of approvalDelta should match the severity of the outcome.
+- Return ONLY JSON, no explanation, no markdown.`;
 }

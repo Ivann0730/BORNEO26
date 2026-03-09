@@ -63,6 +63,16 @@ export interface ClimateTerm {
   definition: string;
 }
 
+/* ────────────────── Sector Stakeholder ───────────────────── */
+export interface SectorStakeholder {
+  sectorId: string;
+  name: string;
+  role: string;
+  avatarEmoji: string;
+  approval: number;
+  lastQuote?: string; // Optional initially until they react
+}
+
 /* ─────────────────── Affected Sector ───────────────────── */
 export interface AffectedSector {
   sector: "Residential" | "Commercial" | "Industrial" | "Institutional" | "Central Business District" | "Mixed Use" | "Green/Open Space";
@@ -93,6 +103,7 @@ export interface DecisionEvaluation {
   status: "accepted" | "rejected" | "needs_more_info";
   justification: string;
   hint: string;
+  capitalCost?: number; // 1-40, defined when accepted
 }
 
 /* ─────────────────── Report Session ──────────────────────── */
@@ -105,6 +116,18 @@ export interface ReportSession {
   decisions: DecisionResult[];
   verdict: string;
   createdAt: string;
+  policyCapitalHistory?: { starting: number, roundCost: number, ending: number }[];
+  sectorStakeholders?: SectorStakeholder[];
+  predictionRanking?: string[];
+  predictionRisk?: string[];
+}
+
+export interface PeerReport {
+  headline_id: string;
+  final_score: number;
+  final_satisfaction: number;
+  decision_count: number;
+  decisions_summary: string[];
 }
 
 /* ──────────────── Simulation Step ─────────────────────────── */

@@ -8,6 +8,7 @@ interface ScoreIndicatorProps {
     previousScore?: number;
     satisfaction: number;
     round: number;
+    policyCapital?: number;
 }
 
 function getScoreColor(score: number): string {
@@ -33,6 +34,7 @@ export default function ScoreIndicator({
     previousScore,
     satisfaction,
     round,
+    policyCapital,
 }: ScoreIndicatorProps) {
     const delta =
         previousScore !== undefined ? score - previousScore : 0;
@@ -57,9 +59,8 @@ export default function ScoreIndicator({
                             </span>
                             {delta !== 0 && (
                                 <span
-                                    className={`flex items-center gap-0.5 text-[10px] font-medium ${
-                                        delta > 0 ? "text-teal" : "text-red-500"
-                                    }`}
+                                    className={`flex items-center gap-0.5 text-[10px] font-medium ${delta > 0 ? "text-teal" : "text-red-500"
+                                        }`}
                                 >
                                     {delta > 0 ? (
                                         <TrendingUp className="h-2.5 w-2.5" />

@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const { location, headline, finalScore, decisions, userName } =
+        const { location, headline, finalScore, finalSatisfaction, decisions, userName, policyCapitalHistory, sectorStakeholders, predictionRanking, predictionRisk } =
             parsed.data;
 
         const slug = nanoid(8);
@@ -32,6 +32,11 @@ export async function POST(request: NextRequest) {
             )
         );
 
+        const decisionCount = decisions.length;
+        const decisionsSummary = (decisions as any[]).map((d: any) =>
+            d.userInput ? d.userInput.substring(0, 120) : ""
+        );
+
         const { error } = await supabaseServer.from("reports").insert({
             slug,
             user_name: userName,
@@ -40,6 +45,14 @@ export async function POST(request: NextRequest) {
             final_score: finalScore,
             decisions,
             verdict,
+            final_satisfaction: finalSatisfaction,
+            decision_count: decisionCount,
+            decisions_summary: decisionsSummary,
+            headline_id: headline.id,
+            policy_capital_history: policyCapitalHistory,
+            sector_stakeholders: sectorStakeholders,
+            prediction_ranking: predictionRanking,
+            prediction_risk: predictionRisk,
         });
 
         if (error) {

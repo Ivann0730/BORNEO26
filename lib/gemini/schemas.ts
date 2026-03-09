@@ -123,6 +123,16 @@ export const decisionEvaluationSchema = z.object({
     status: z.enum(["accepted", "rejected", "needs_more_info"]),
     justification: z.string(),
     hint: z.string(),
+    capitalCost: z.number().int().min(1).max(40).optional(),
 });
 
 export type DecisionEvaluationResponse = z.infer<typeof decisionEvaluationSchema>;
+
+/* ────────── Stakeholder React (from /api/stakeholder-react) ────────── */
+
+export const stakeholderReactSchema = z.object({
+    quote: z.string(),
+    approvalDelta: z.number().int().min(-40).max(40),
+});
+
+export type StakeholderReactResponse = z.infer<typeof stakeholderReactSchema>;

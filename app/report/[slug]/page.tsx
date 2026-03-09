@@ -1,5 +1,5 @@
 import { supabaseServer } from "@/lib/supabase/server";
-import type { ReportSession, Location, ClimateHeadline, DecisionResult } from "@/types";
+import type { ReportSession, Location, ClimateHeadline, DecisionResult, PeerReport } from "@/types";
 import ReportPageClient from "./ReportPageClient";
 
 interface PageProps {
@@ -25,15 +25,36 @@ async function getReport(slug: string): Promise<ReportSession | null> {
             decisions: data.decisions as DecisionResult[],
             verdict: data.verdict ?? "",
             createdAt: data.created_at,
+            policyCapitalHistory: data.policy_capital_history,
+            sectorStakeholders: data.sector_stakeholders,
+            predictionRanking: data.prediction_ranking,
+            predictionRisk: data.prediction_risk,
         };
     } catch {
         return null;
     }
 }
 
+async function getPeerReports(headlineId: string, currentSlug: string): Promise<PeerReport[]> {
+    try {
+        const { data, error } = await supabaseServer
+            .from("reports")
+            .select("headline_id, final_score, final_satisfaction, decision_count, decisions_summary")
+            .eq("headline_id", headlineId)
+            .neq("slug", currentSlug)
+            .limit(5);
+
+        if (error || !data) return [];
+        return data as PeerReport[];
+    } catch {
+        return [];
+    }
+}
+
 export default async function ReportPage({ params }: PageProps) {
     const { slug } = await params;
     const report = await getReport(slug);
+    const peerReports = report ? await getPeerReports(report.headline.id, report.slug) : [];
 
     if (!report) {
         return (
@@ -54,5 +75,5 @@ export default async function ReportPage({ params }: PageProps) {
         );
     }
 
-    return <ReportPageClient report={report} />;
+    return <ReportPageClient report={report} peerReports={peerReports} />;
 }
