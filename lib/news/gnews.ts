@@ -1,21 +1,24 @@
 import "server-only";
 import type { ClimateHeadline } from "@/types";
 
-const GNEWS_BASE = "https://gnews.io/api/v4/search";
+const GNEWS_TOP_HEADLINES = "https://gnews.io/api/v4/top-headlines";
 
-const FALLBACK_HEADLINES: ClimateHeadline[] = [
-    {
-        id: "fallback-srp-cebu",
-        title: "SRP Dumpsite in Cebu Raises Health and Environmental Concerns",
-        description:
-            "The South Road Properties landfill in Cebu City continues to affect nearby communities with air quality issues and groundwater contamination risks.",
-        source: "Cebu Daily News",
-        url: "https://cebudailynews.inquirer.net",
-        publishedAt: "2025-01-15T00:00:00Z",
-        locationTag: "Cebu, Philippines",
-        resolvedLat: 10.270399,
-        resolvedLng: 123.868957,
-    },
+/* ── SRP headline — always included ── */
+const SRP_HEADLINE: ClimateHeadline = {
+    id: "fallback-srp-cebu",
+    title: "SRP Dumpsite in Cebu Raises Health and Environmental Concerns",
+    description:
+        "The South Road Properties landfill in Cebu City continues to affect nearby communities with air quality issues and groundwater contamination risks.",
+    source: "Cebu Daily News",
+    url: "https://cebudailynews.inquirer.net",
+    publishedAt: "2025-01-15T00:00:00Z",
+    locationTag: "Cebu, Philippines",
+    resolvedLat: 10.270399,
+    resolvedLng: 123.868957,
+};
+
+/* ── Additional fallbacks when GNews fails ── */
+const OTHER_FALLBACKS: ClimateHeadline[] = [
     {
         id: "fallback-jakarta-flooding",
         title: "Jakarta Flooding Displaces Thousands as Sea Levels Rise",
@@ -28,27 +31,46 @@ const FALLBACK_HEADLINES: ClimateHeadline[] = [
     },
 ];
 
+/** Returns true when the string looks like raw coordinates ("10.81, 118.50"). */
+function isCoordinateLike(raw: string): boolean {
+    return /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(raw.trim());
+}
+
+const MAX_HEADLINES = 5; // SRP + up to 4 from GNews
+const CLIMATE_QUERY = "climate OR environment OR pollution OR disaster";
+
 export async function fetchHeadlines(
     locationName: string
 ): Promise<ClimateHeadline[]> {
     const apiKey = process.env.GNEWS_API_KEY;
     if (!apiKey) {
         console.warn("GNEWS_API_KEY not set, returning fallbacks");
-        return FALLBACK_HEADLINES;
+        return [SRP_HEADLINE, ...OTHER_FALLBACKS].slice(0, MAX_HEADLINES);
     }
 
     try {
+        // Build params for the top-headlines endpoint
         const params = new URLSearchParams({
-            q: `climate ${locationName}`,
+            q: CLIMATE_QUERY,
             token: apiKey,
             lang: "en",
-            max: "5",
+            max: String(MAX_HEADLINES - 1), // leave room for SRP
+            category: "general",
         });
 
-        const res = await fetch(`${GNEWS_BASE}?${params.toString()}`);
+        // If we have a real location name (not coordinates), append it to
+        // the query so results skew toward that region
+        const trimmed = locationName.trim();
+        if (trimmed && !isCoordinateLike(trimmed)) {
+            params.set("q", `${trimmed} AND (${CLIMATE_QUERY})`);
+        }
+
+        const res = await fetch(
+            `${GNEWS_TOP_HEADLINES}?${params.toString()}`
+        );
         if (!res.ok) {
             console.error("GNews API error:", res.status);
-            return FALLBACK_HEADLINES;
+            return [SRP_HEADLINE, ...OTHER_FALLBACKS].slice(0, MAX_HEADLINES);
         }
 
         const data = await res.json();
@@ -64,13 +86,11 @@ export async function fetchHeadlines(
             })
         );
 
-        if (articles.length < 3) {
-            return [...articles, ...FALLBACK_HEADLINES.slice(0, 3 - articles.length)];
-        }
-
-        return articles;
+        // Always lead with SRP, fill remaining slots with GNews articles
+        return [SRP_HEADLINE, ...articles].slice(0, MAX_HEADLINES);
     } catch (error) {
         console.error("GNews fetch error:", error);
-        return FALLBACK_HEADLINES;
+        return [SRP_HEADLINE, ...OTHER_FALLBACKS].slice(0, MAX_HEADLINES);
     }
 }
+
