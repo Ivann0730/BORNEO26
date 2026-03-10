@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const { location, headline, finalScore, finalSatisfaction, decisions, userName, policyCapitalHistory, sectorStakeholders, predictionRanking, predictionRisk } =
+        const { location, headline, finalScore, finalSatisfaction, decisions, userName, policyCapitalHistory, sectorStakeholders, predictionRanking, predictionRisk, predictionEvaluation } =
             parsed.data;
 
         const slug = nanoid(8);
@@ -53,6 +53,7 @@ export async function POST(request: NextRequest) {
             sector_stakeholders: sectorStakeholders,
             prediction_ranking: predictionRanking,
             prediction_risk: predictionRisk,
+            prediction_evaluation: predictionEvaluation,
         });
 
         if (error) {

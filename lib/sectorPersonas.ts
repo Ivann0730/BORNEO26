@@ -19,7 +19,7 @@ export const SECTOR_PERSONAS: Record<string, SectorPersona> = {
     "Commercial": { name: "James", role: "Local Business Owner", avatarEmoji: "🏪" },
     "Industrial": { name: "Chen", role: "Factory Operations Manager", avatarEmoji: "🏭" },
     "Institutional": { name: "Dr. Asel", role: "Public Servant", avatarEmoji: "🏛️" },
-    "Central Business District": { name: "Priya", role: "Corporate Executive", avatarEmoji: "🏢" },
+    "Business District": { name: "Priya", role: "Corporate Executive", avatarEmoji: "🏢" },
     "Mixed Use": { name: "Marco", role: "Community Organizer", avatarEmoji: "🏘️" },
-    "Green/Open Space": { name: "Rina", role: "Parks Coordinator", avatarEmoji: "🌳" }
+    "Open Space": { name: "Rina", role: "Parks Coordinator", avatarEmoji: "🌳" }
 };

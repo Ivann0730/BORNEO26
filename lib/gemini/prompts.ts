@@ -72,12 +72,13 @@ Interpret their decision and return ONLY a valid JSON object:
   "interpretation": "1 sentence describing what you understood their decision to be",
   "scoreDelta": (integer between -30 and +30),
   "newScore": (previousScore + scoreDelta, clamped 0-100),
-  "satisfactionDelta": (integer between -20 and +20, represents affected people's reaction),
+  "satisfactionDelta": (integer between -20 and +20, represents how the public at large reacts),
   "newSatisfaction": (previousSatisfaction + satisfactionDelta, clamped 0-100),
   "affectedSectors": [
     {
-      "sector": "one of: Residential, Commercial, Industrial, Institutional, Central Business District, Mixed Use, Green/Open Space",
+      "sector": "one of: Residential, Commercial, Industrial, Institutional, Business District, Mixed Use, Open Space",
       "explanation": "2-3 sentences explaining how this specific sector is affected.",
+      "trustDelta": (integer between -20 and +20 representing change in trust for this specific sector),
       "cameraTarget": {
         "center": [${scenario.location.lng}, ${scenario.location.lat}],
         "zoom": 17,
@@ -128,7 +129,7 @@ Rules:
 - Provide 1-3 affectedSectors showing the specific impact on different city zones
 - The cameraTarget in affectedSectors should zoom in closely to the affected area
 - Provide 1-2 mapInstructions in affectedSectors to highlight the area
-- CRITICAL: For affectedSectors, you MUST use these exact colors for the mapInstructions: Residential (#ef4444), Commercial (#3b82f6), Industrial (#f59e0b), Institutional (#a855f7), Central Business District (#eab308), Mixed Use (#ec4899), Green/Open Space (#22c55e).
+- CRITICAL: For affectedSectors, you MUST use these exact colors for the mapInstructions: Residential (#ef4444), Commercial (#3b82f6), Industrial (#f59e0b), Institutional (#a855f7), Business District (#eab308), Mixed Use (#ec4899), Open Space (#22c55e).
 - Provide 1-2 overall mapInstructions showing the visual effect of the decision for the whole city
 - All coordinates must be tightly clustered near [${scenario.location.lng}, ${scenario.location.lat}] (within 0.02 degrees)
 - CRITICAL: Ensure coordinates are placed logically. Terrestrial sectors (Residential, Commercial, Industrial, etc.) MUST be placed on land. Do not hallucinate coordinates in the middle of the ocean or water bodies!
@@ -253,5 +254,34 @@ Rules:
 - If the outcome is good for your sector, express relief or optimism, and approvalDelta should be positive.
 - If the outcome is bad, express frustration, fear, or anger, and approvalDelta should be negative.
 - The magnitude of approvalDelta should match the severity of the outcome.
+- Return ONLY JSON, no explanation, no markdown.`;
+}
+
+export function buildPredictionEvaluationPrompt(
+  scenarioContext: string,
+  predictedSectors: string[],
+  predictedRisk: string
+): string {
+  return `You are an educational evaluator for a climate policy simulation.
+Based on the following scenario, determine the actual top 3 city sectors most likely to be impacted if no action is taken.
+Then, evaluate the user's prediction of the impacted sectors and their stated risk.
+
+Scenario Context: ${scenarioContext}
+User's Predicted Sectors: ${predictedSectors.join(", ")}
+User's Predicted Risk: "${predictedRisk}"
+
+Return ONLY a valid JSON object matching this structure:
+{
+  "actualTop3": [
+    { "sector": "sector name", "explanation": "1 short sentence explaining why" }
+  ],
+  "score": (integer 0-100 evaluating the user's predictions),
+  "feedback": "A short, encouraging 2-3 sentence feedback explaining why their prediction was accurate or what they missed."
+}
+
+Rules:
+- actualTop3 MUST be exactly 3 unique sectors chosen from: Residential, Commercial, Industrial, Institutional, Business District, Mixed Use, Open Space.
+- The score should be based on how well their predicted sectors match your actualTop3, and how insightful their predicted risk is.
+- Provide constructive feedback written at a Grade 7-8 reading level.
 - Return ONLY JSON, no explanation, no markdown.`;
 }

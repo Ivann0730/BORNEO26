@@ -78,11 +78,12 @@ const affectedSectorSchema = z.object({
         "Commercial",
         "Industrial",
         "Institutional",
-        "Central Business District",
+        "Business District",
         "Mixed Use",
-        "Green/Open Space"
+        "Open Space"
     ]),
     explanation: z.string(),
+    trustDelta: z.number().int().min(-20).max(20),
     cameraTarget: cameraTargetSchema.optional(),
     mapInstructions: z.array(mapInstructionSchema),
 });
@@ -136,3 +137,16 @@ export const stakeholderReactSchema = z.object({
 });
 
 export type StakeholderReactResponse = z.infer<typeof stakeholderReactSchema>;
+
+/* ────────── Prediction Evaluation ────────── */
+
+export const evaluatePredictionSchema = z.object({
+    actualTop3: z.array(z.object({
+        sector: z.string(),
+        explanation: z.string()
+    })).min(1).max(3),
+    score: z.number().int().min(0).max(100),
+    feedback: z.string(),
+});
+
+export type EvaluatePredictionResponse = z.infer<typeof evaluatePredictionSchema>;

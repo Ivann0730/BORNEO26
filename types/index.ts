@@ -69,14 +69,16 @@ export interface SectorStakeholder {
   name: string;
   role: string;
   avatarEmoji: string;
+  initialApproval: number;
   approval: number;
-  lastQuote?: string; // Optional initially until they react
+  quotes?: string[];
 }
 
 /* ─────────────────── Affected Sector ───────────────────── */
 export interface AffectedSector {
-  sector: "Residential" | "Commercial" | "Industrial" | "Institutional" | "Central Business District" | "Mixed Use" | "Green/Open Space";
+  sector: "Residential" | "Commercial" | "Industrial" | "Institutional" | "Business District" | "Mixed Use" | "Open Space";
   explanation: string;
+  trustDelta: number;
   cameraTarget?: CameraTarget;
   mapInstructions: MapInstruction[];
 }
@@ -106,6 +108,13 @@ export interface DecisionEvaluation {
   capitalCost?: number; // 1-40, defined when accepted
 }
 
+/* ───────────────── Prediction Evaluation ───────────────── */
+export interface PredictionEvaluation {
+  actualTop3: { sector: string; explanation: string }[];
+  score: number;
+  feedback: string;
+}
+
 /* ─────────────────── Report Session ──────────────────────── */
 export interface ReportSession {
   slug: string;
@@ -120,6 +129,7 @@ export interface ReportSession {
   sectorStakeholders?: SectorStakeholder[];
   predictionRanking?: string[];
   predictionRisk?: string[];
+  predictionEvaluation?: PredictionEvaluation;
 }
 
 export interface PeerReport {

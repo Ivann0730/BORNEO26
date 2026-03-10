@@ -67,14 +67,15 @@ export default function ExplanationPanel({
     onStakeholderReact,
     allStakeholders,
 }: ExplanationPanelProps) {
-    const [localQuote, setLocalQuote] = useState<string | null>(persona?.lastQuote || null);
+    const [localQuote, setLocalQuote] = useState<string | null>(persona?.quotes?.[persona?.quotes.length - 1] || null);
     const [localDelta, setLocalDelta] = useState<number | null>(null);
     const [isLoadingQuote, setIsLoadingQuote] = useState(false);
 
     useEffect(() => {
         if (!persona || !sectorName || !decisionText || !onStakeholderReact) return;
-        if (persona.lastQuote) {
-            setLocalQuote(persona.lastQuote);
+        const lastQuote = persona.quotes?.[persona.quotes.length - 1];
+        if (lastQuote) {
+            setLocalQuote(lastQuote);
             return;
         }
 

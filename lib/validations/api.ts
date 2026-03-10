@@ -85,6 +85,7 @@ export const reportBodySchema = z.object({
     sectorStakeholders: z.array(z.unknown()).optional(),
     predictionRanking: z.array(z.string()).optional(),
     predictionRisk: z.string().optional(),
+    predictionEvaluation: z.unknown().optional(),
 });
 
 /* ────────── /api/evaluate-decision body ────────── */

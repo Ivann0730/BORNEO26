@@ -20,7 +20,8 @@ interface UseReportReturn {
         policyCapitalHistory: any[],
         sectorStakeholders: any[],
         predictionRanking: string[],
-        predictionRisk: string
+        predictionRisk: string,
+        predictionEvaluation: any
     ) => Promise<string | null>;
     fetchReport: (slug: string) => Promise<ReportSession | null>;
     isGenerating: boolean;
@@ -42,7 +43,8 @@ export function useReport(): UseReportReturn {
             policyCapitalHistory: any[],
             sectorStakeholders: any[],
             predictionRanking: string[],
-            predictionRisk: string
+            predictionRisk: string,
+            predictionEvaluation: any
         ): Promise<string | null> => {
             setIsGenerating(true);
             setError(null);
@@ -61,7 +63,8 @@ export function useReport(): UseReportReturn {
                         policyCapitalHistory,
                         sectorStakeholders,
                         predictionRanking,
-                        predictionRisk
+                        predictionRisk,
+                        predictionEvaluation
                     }),
                 });
 
@@ -107,6 +110,7 @@ export function useReport(): UseReportReturn {
                     sectorStakeholders: data.sector_stakeholders,
                     predictionRanking: data.prediction_ranking,
                     predictionRisk: data.prediction_risk,
+                    predictionEvaluation: data.prediction_evaluation,
                 } as ReportSession;
             } catch {
                 return null;

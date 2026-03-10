@@ -15,8 +15,7 @@ import ScenarioPanel from "@/components/sim/ScenarioPanel";
 import SimDecisionUI from "./SimDecisionUI";
 import DeckGLOverlay from "@/components/map/DeckGLOverlay";
 import ZoneLegend from "@/components/sim/ZoneLegend";
-import TrafficControls from "@/components/traffic/TrafficControls";
-import TrafficLegend from "@/components/traffic/TrafficLegend";
+
 import { Loader2, Play } from "lucide-react";
 
 
@@ -127,7 +126,8 @@ export default function SimPage() {
                 sim.policyCapitalHistory,
                 sim.sectorStakeholders,
                 sim.predictionRanking,
-                sim.predictionRisk
+                sim.predictionRisk,
+                sim.predictionEvaluation!
             )
             .then((slug) => {
                 if (slug) {
@@ -156,15 +156,6 @@ export default function SimPage() {
                 />
             </div>
 
-            {/* Traffic controls + legend */}
-            <TrafficControls
-                state={map.traffic.state}
-                zoom={Math.round(map.mapRef.current?.getZoom() ?? 0)}
-                onConfigChange={map.traffic.updateConfig}
-                onToggle={map.traffic.toggle}
-            />
-            <TrafficLegend config={map.traffic.state.config} />
-
             {/* Resume B-Roll Button */}
             {map.isBrollPaused && sim.step !== "complete" && (
                 <div className="absolute bottom-6 left-1/2 -translate-x-1/2 pointer-events-auto z-[1000] animate-in slide-in-from-bottom-4 fade-in duration-300">
@@ -178,8 +169,6 @@ export default function SimPage() {
                 </div>
             )}
 
-            {/* Zone legend (visible during decision) */}
-            {sim.step === "decision" && <ZoneLegend />}
 
             {/* UI overlays */}
             <div className="absolute inset-0 pointer-events-none pt-14 p-4 flex flex-col">
@@ -216,6 +205,20 @@ export default function SimPage() {
                             onComplete={(ranking, risk) => {
                                 sim.setPredictions(ranking, risk);
                                 handleScenarioReady();
+
+                                // Background fetch for evaluation
+                                fetch("/api/evaluate-prediction", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({
+                                        scenarioContext: sim.scenario?.context,
+                                        predictedSectors: ranking,
+                                        predictedRisk: risk,
+                                    }),
+                                }).then(res => res.json())
+                                    .then(evaluation => {
+                                        sim.setPredictionEvaluation(evaluation);
+                                    }).catch(console.error);
                             }}
                         />
                     </div>

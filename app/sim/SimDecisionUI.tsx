@@ -6,6 +6,7 @@ import ExplanationPanel from "@/components/sim/ExplanationPanel";
 import HintButton from "@/components/sim/HintButton";
 import DecisionInput from "@/components/sim/DecisionInput";
 import SimPanel from "@/components/sim/SimPanel";
+import ZoneLegend from "@/components/sim/ZoneLegend";
 import { useEvaluateDecision } from "@/hooks/useEvaluateDecision";
 import type { DecisionResult, DecisionEvaluation } from "@/types";
 import { AlertCircle, Info } from "lucide-react";
@@ -173,6 +174,12 @@ export default function SimDecisionUI({ sim, decision, map }: SimDecisionUIProps
                 satisfaction={sim.satisfactionScore}
                 round={sim.currentRound}
                 policyCapital={sim.policyCapital}
+            />
+
+            <ZoneLegend
+                sectorTrusts={sim.sectorStakeholders.reduce((acc, s) => ({ ...acc, [s.sectorId]: s.approval }), {})}
+                activeSectorId={showExplanation && lastResult && currentSectorIndex >= 0 ? lastResult.affectedSectors[currentSectorIndex].sector : undefined}
+                activeSectorDelta={showExplanation && lastResult && currentSectorIndex >= 0 ? lastResult.affectedSectors[currentSectorIndex].trustDelta : undefined}
             />
 
             {/* Side panel / bottom sheet */}

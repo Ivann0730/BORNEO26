@@ -29,6 +29,7 @@ async function getReport(slug: string): Promise<ReportSession | null> {
             sectorStakeholders: data.sector_stakeholders,
             predictionRanking: data.prediction_ranking,
             predictionRisk: data.prediction_risk,
+            predictionEvaluation: data.prediction_evaluation,
         };
     } catch {
         return null;
