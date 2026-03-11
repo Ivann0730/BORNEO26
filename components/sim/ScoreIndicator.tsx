@@ -8,7 +8,6 @@ interface ScoreIndicatorProps {
     previousScore?: number;
     satisfaction: number;
     round: number;
-    policyCapital?: number;
 }
 
 function getScoreColor(score: number): string {
@@ -34,7 +33,6 @@ export default function ScoreIndicator({
     previousScore,
     satisfaction,
     round,
-    policyCapital,
 }: ScoreIndicatorProps) {
     const delta =
         previousScore !== undefined ? score - previousScore : 0;

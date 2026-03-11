@@ -100,12 +100,11 @@ export interface DecisionResult {
   alternativeMapInstructions: MapInstruction[];
 }
 
-/* ─────────────────── Decision Evaluation ─────────────────── */
+/* ───────────────── Decision Evaluation ─────────────────── */
 export interface DecisionEvaluation {
   status: "accepted" | "rejected" | "needs_more_info";
   justification: string;
   hint: string;
-  capitalCost?: number; // 1-40, defined when accepted
 }
 
 /* ───────────────── Prediction Evaluation ───────────────── */
@@ -125,7 +124,6 @@ export interface ReportSession {
   decisions: DecisionResult[];
   verdict: string;
   createdAt: string;
-  policyCapitalHistory?: { starting: number, roundCost: number, ending: number }[];
   sectorStakeholders?: SectorStakeholder[];
   predictionRanking?: string[];
   predictionRisk?: string[];

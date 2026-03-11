@@ -123,7 +123,6 @@ export default function SimPage() {
                 sim.satisfactionScore,
                 sim.decisions,
                 "Anonymous",
-                sim.policyCapitalHistory,
                 sim.sectorStakeholders,
                 sim.predictionRanking,
                 sim.predictionRisk,

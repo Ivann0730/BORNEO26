@@ -124,7 +124,6 @@ export const decisionEvaluationSchema = z.object({
     status: z.enum(["accepted", "rejected", "needs_more_info"]),
     justification: z.string(),
     hint: z.string(),
-    capitalCost: z.number().int().min(1).max(40).optional(),
 });
 
 export type DecisionEvaluationResponse = z.infer<typeof decisionEvaluationSchema>;

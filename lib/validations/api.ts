@@ -81,7 +81,6 @@ export const reportBodySchema = z.object({
     finalSatisfaction: z.number().int().min(0).max(100),
     decisions: z.array(z.unknown()).min(1),
     userName: z.string().min(1).max(100),
-    policyCapitalHistory: z.array(z.unknown()).optional(),
     sectorStakeholders: z.array(z.unknown()).optional(),
     predictionRanking: z.array(z.string()).optional(),
     predictionRisk: z.string().optional(),

@@ -25,7 +25,6 @@ async function getReport(slug: string): Promise<ReportSession | null> {
             decisions: data.decisions as DecisionResult[],
             verdict: data.verdict ?? "",
             createdAt: data.created_at,
-            policyCapitalHistory: data.policy_capital_history,
             sectorStakeholders: data.sector_stakeholders,
             predictionRanking: data.prediction_ranking,
             predictionRisk: data.prediction_risk,

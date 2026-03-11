@@ -32,8 +32,6 @@ interface SimulationState {
     isLoading: boolean;
     error: string | null;
     isFailed: boolean;
-    policyCapital: number;
-    policyCapitalHistory: { starting: number, roundCost: number, ending: number }[];
     sectorStakeholders: SectorStakeholder[];
     predictionRanking: string[];
     predictionRisk: string;
@@ -55,8 +53,6 @@ const initialState: SimulationState = {
     isLoading: false,
     error: null,
     isFailed: false,
-    policyCapital: 100,
-    policyCapitalHistory: [],
     sectorStakeholders: [],
     predictionRanking: [],
     predictionRisk: "",
@@ -133,19 +129,10 @@ export function useSimulation() {
 
     // BUG-04 fix: addDecision does NOT auto-advance to complete.
     // The sim page calls advanceAfterExplanation() after showing the explanation.
-    const addDecision = useCallback((result: DecisionResult, capitalCost?: number) => {
+    const addDecision = useCallback((result: DecisionResult) => {
         setState((prev) => {
             const decisions = [...prev.decisions, result];
             const newSatisfaction = result.newSatisfaction;
-
-            const cost = capitalCost ?? 0;
-            const newCapital = prev.policyCapital - cost;
-
-            const capitalHistoryEntry = {
-                starting: prev.policyCapital,
-                roundCost: cost,
-                ending: newCapital
-            };
 
             // Update sector stakeholders based on affected sectors
             const updatedStakeholders = prev.sectorStakeholders.map(s => {
@@ -172,8 +159,6 @@ export function useSimulation() {
                 decisions,
                 currentScore,
                 satisfactionScore,
-                policyCapital: newCapital,
-                policyCapitalHistory: [...prev.policyCapitalHistory, capitalHistoryEntry],
                 sectorStakeholders: updatedStakeholders,
                 isLoading: false,
                 isFailed,
