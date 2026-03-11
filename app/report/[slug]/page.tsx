@@ -21,7 +21,9 @@ async function getReport(slug: string): Promise<ReportSession | null> {
             userName: data.user_name ?? "",
             location: data.location as Location,
             headline: data.headline as ClimateHeadline,
-            finalScore: data.final_score,
+            finalEcology: data.final_ecology,
+            finalEconomy: data.final_economy,
+            finalSociety: data.final_society,
             decisions: data.decisions as DecisionResult[],
             verdict: data.verdict ?? "",
             createdAt: data.created_at,
@@ -39,7 +41,7 @@ async function getPeerReports(headlineId: string, currentSlug: string): Promise<
     try {
         const { data, error } = await supabaseServer
             .from("reports")
-            .select("headline_id, final_score, final_satisfaction, decision_count, decisions_summary")
+            .select("headline_id, final_ecology, final_economy, final_society, decision_count, decisions_summary")
             .eq("headline_id", headlineId)
             .neq("slug", currentSlug)
             .limit(5);

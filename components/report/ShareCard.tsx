@@ -2,19 +2,29 @@
 
 import { useRef } from "react";
 import html2canvas from "html2canvas";
-import { Download, Link2, Award } from "lucide-react";
+import { Download, Link2, Leaf, Briefcase, Users } from "lucide-react";
 import type { ReportSession } from "@/types";
 
 interface ShareCardProps {
     report: ReportSession;
 }
 
+function getEcologyColor(val: number): string {
+    if (val <= 30) return "text-red-400";
+    if (val <= 60) return "text-amber-400";
+    return "text-green-400";
+}
 
-function getScoreLabel(score: number): string {
-    if (score >= 80) return "Climate Champion";
-    if (score >= 60) return "Thoughtful Leader";
-    if (score >= 40) return "Learning Leader";
-    return "Getting Started";
+function getEconomyColor(val: number): string {
+    if (val <= 10) return "text-red-400";
+    if (val <= 40) return "text-amber-400";
+    return "text-blue-400";
+}
+
+function getSocietyColor(val: number): string {
+    if (val <= 15) return "text-red-400";
+    if (val <= 45) return "text-amber-400";
+    return "text-orange-400";
 }
 
 export default function ShareCard({ report }: ShareCardProps) {
@@ -76,17 +86,32 @@ export default function ShareCard({ report }: ShareCardProps) {
                             </p>
                         )}
                     </div>
+                    {/* Ecology */}
                     <div className="flex items-center gap-2">
-                        <Award className="h-5 w-5" />
-                        <span className="text-2xl font-bold">
-                            {report.finalScore}%
+                        <Leaf className={`h-4 w-4 ${getEcologyColor(report.finalEcology)}`} />
+                        <span className="text-xl font-bold">
+                            {report.finalEcology}%
                         </span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-0.5">Ecology</span>
                     </div>
-                    <p className="text-xs font-medium">
-                        {getScoreLabel(report.finalScore)}
-                    </p>
+                    {/* Economy */}
+                    <div className="flex items-center gap-2">
+                        <Briefcase className={`h-4 w-4 ${getEconomyColor(report.finalEconomy)}`} />
+                        <span className="text-xl font-bold">
+                            {report.finalEconomy}%
+                        </span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-0.5">Economy</span>
+                    </div>
+                    {/* Society */}
+                    <div className="flex items-center gap-2">
+                        <Users className={`h-4 w-4 ${getSocietyColor(report.finalSociety)}`} />
+                        <span className="text-xl font-bold">
+                            {report.finalSociety}%
+                        </span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-0.5">Society</span>
+                    </div>
                     {report.verdict && (
-                        <p className="text-xs opacity-80 italic mt-1">
+                        <p className="text-xs opacity-80 italic mt-3 leading-snug">
                             {report.verdict}
                         </p>
                     )}

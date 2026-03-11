@@ -33,8 +33,10 @@ export default function SimDecisionUI({ sim, decision, map }: SimDecisionUIProps
             sim.scenario!,
             text,
             sim.currentRound,
-            sim.currentScore,
-            sim.satisfactionScore,
+            sim.currentEcology,
+            sim.currentEconomy,
+            sim.societyScore,
+            sim.sectorStakeholders.map(s => `[${s.sectorId}]: ${s.approval}`).join(', '),
             sim.decisions
         );
         if (result) {
@@ -147,8 +149,14 @@ export default function SimDecisionUI({ sim, decision, map }: SimDecisionUIProps
         sim.recordHintUsed(sim.currentRound);
     }, [sim]);
 
-    const prevScore = lastResult
-        ? sim.currentScore - (lastResult.scoreDelta ?? 0)
+    const prevEcology = lastResult
+        ? sim.currentEcology - (lastResult.ecologyDelta ?? 0)
+        : undefined;
+    const prevEconomy = lastResult
+        ? sim.currentEconomy - (lastResult.economyDelta ?? 0)
+        : undefined;
+    const prevSociety = lastResult
+        ? sim.societyScore - (lastResult.societyDelta ?? 0)
         : undefined;
 
     const isLastRound = sim.decisions.length >= sim.maxDecisions || sim.isFailed;
@@ -157,9 +165,12 @@ export default function SimDecisionUI({ sim, decision, map }: SimDecisionUIProps
         <>
             {/* Fixed top score bar */}
             <ScoreIndicator
-                score={sim.currentScore}
-                previousScore={prevScore}
-                satisfaction={sim.satisfactionScore}
+                ecology={sim.currentEcology}
+                economy={sim.currentEconomy}
+                society={sim.societyScore}
+                previousEcology={prevEcology}
+                previousEconomy={prevEconomy}
+                previousSociety={prevSociety}
                 round={sim.currentRound}
             />
 

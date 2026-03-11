@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { MapPin, Award, RefreshCw, ArrowRight, AlertTriangle, Users, Target, Activity, CheckCircle2, Coins } from "lucide-react";
+import { MapPin, Award, RefreshCw, ArrowRight, AlertTriangle, Users, Target, Activity, CheckCircle2, Leaf, Briefcase } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import DecisionTreeView from "@/components/report/DecisionTreeView";
 import ShareCard from "@/components/report/ShareCard";
@@ -14,27 +14,38 @@ interface ReportPageClientProps {
     peerReports?: PeerReport[];
 }
 
+function getEcologyColor(val: number): string {
+    if (val <= 30) return "text-red-500";
+    if (val <= 60) return "text-amber-500";
+    return "text-green-500";
+}
 
-function getScoreColor(score: number): string {
-    if (score < 40) return "text-red-500";
-    if (score < 70) return "text-amber";
-    return "text-teal";
+function getEconomyColor(val: number): string {
+    if (val <= 10) return "text-red-500";
+    if (val <= 40) return "text-amber-500";
+    return "text-blue-500";
+}
+
+function getSocietyColor(val: number): string {
+    if (val <= 15) return "text-red-500";
+    if (val <= 45) return "text-amber-500";
+    return "text-orange-500";
 }
 
 export default function ReportPageClient({ report: initial, peerReports = [] }: ReportPageClientProps) {
     const [report, setReport] = useState(initial);
     const [showNameInput, setShowNameInput] = useState(!report.userName);
 
-    const isFailed = report.finalScore <= 15;
+    const isFailed = report.finalSociety <= 15 || report.finalEconomy <= 10;
 
     function handleNameSubmit(name: string) {
         setReport((prev) => ({ ...prev, userName: name }));
         setShowNameInput(false);
     }
 
-    const initialScore = report.decisions.length > 0
-        ? report.decisions[0].newScore - report.decisions[0].scoreDelta
-        : report.finalScore;
+    const initialEcology = report.decisions.length > 0
+        ? report.decisions[0].newEcology - report.decisions[0].ecologyDelta
+        : report.finalEcology;
 
     return (
         <div className="min-h-screen bg-background">
@@ -45,23 +56,48 @@ export default function ReportPageClient({ report: initial, peerReports = [] }: 
                 <div className="text-center flex flex-col gap-3">
                     <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                         <MapPin className="h-4 w-4" />
-                        <span>{report.location.name}, {report.location.country}</span>
+                        <span>
+                            {typeof report.location === 'string'
+                                ? report.location
+                                : `${report.location?.name || 'Unknown Location'}${report.location?.country ? `, ${report.location.country}` : ''}`}
+                        </span>
                     </div>
                     <h1 className="text-xl sm:text-2xl font-bold leading-snug px-4">
                         {report.headline.title}
                     </h1>
 
 
-                    {/* Score */}
-                    <div className="flex items-center justify-center gap-2">
-                        {isFailed ? (
-                            <AlertTriangle className="h-5 w-5 text-red-500" />
-                        ) : (
-                            <Award className="h-5 w-5 text-primary" />
-                        )}
-                        <span className={`text-3xl font-bold ${getScoreColor(report.finalScore)}`}>
-                            {report.finalScore}%
-                        </span>
+                    {/* Scores */}
+                    <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 mt-2">
+                        {/* Ecology */}
+                        <div className="flex items-center justify-center gap-2">
+                            <Leaf className="h-5 w-5 text-green-500" />
+                            <span className={`text-2xl font-bold ${getEcologyColor(report.finalEcology)}`}>
+                                {report.finalEcology}%
+                            </span>
+                        </div>
+                        {/* Economy */}
+                        <div className="flex items-center justify-center gap-2">
+                            {report.finalEconomy <= 10 ? (
+                                <AlertTriangle className="h-5 w-5 text-red-500" />
+                            ) : (
+                                <Briefcase className="h-5 w-5 text-blue-500" />
+                            )}
+                            <span className={`text-2xl font-bold ${getEconomyColor(report.finalEconomy)}`}>
+                                {report.finalEconomy}%
+                            </span>
+                        </div>
+                        {/* Society */}
+                        <div className="flex items-center justify-center gap-2">
+                            {report.finalSociety <= 15 ? (
+                                <AlertTriangle className="h-5 w-5 text-red-500" />
+                            ) : (
+                                <Users className="h-5 w-5 text-orange-500" />
+                            )}
+                            <span className={`text-2xl font-bold ${getSocietyColor(report.finalSociety)}`}>
+                                {report.finalSociety}%
+                            </span>
+                        </div>
                     </div>
 
                     {isFailed && (
@@ -87,7 +123,7 @@ export default function ReportPageClient({ report: initial, peerReports = [] }: 
                     </h2>
                     <DecisionTreeView
                         decisions={report.decisions}
-                        initialScore={initialScore}
+                        initialScore={initialEcology}
                         isFailed={isFailed}
                     />
                 </section>
@@ -262,18 +298,18 @@ export default function ReportPageClient({ report: initial, peerReports = [] }: 
                                     <div
                                         key={i}
                                         className="absolute w-3 h-3 rounded-full bg-muted-foreground/40 border border-background -ml-1.5 -mb-1.5 peer-dot group transition-transform hover:scale-150 hover:bg-muted-foreground hover:z-10"
-                                        style={{ left: `${Math.max(5, Math.min(95, p.final_score))}%`, bottom: `${Math.max(5, Math.min(95, p.final_satisfaction))}%` }}
-                                        title={`Peer: Score ${p.final_score}%, Satisfaction ${p.final_satisfaction}%, ${p.decision_count} decisions`}
+                                        style={{ left: `${Math.max(5, Math.min(95, p.final_economy))}%`, bottom: `${Math.max(5, Math.min(95, p.final_ecology))}%` }}
+                                        title={`Peer: Ecology ${p.final_ecology}%, Economy ${p.final_economy}%`}
                                     />
                                 ))}
 
                                 {/* User Dot */}
                                 <div
                                     className="absolute w-4 h-4 rounded-full bg-primary border-2 border-background shadow-[0_0_10px_rgba(20,184,166,0.6)] -ml-2 -mb-2 z-20 transition-transform hover:scale-125"
-                                    style={{ left: `${Math.max(5, Math.min(95, report.finalScore))}%`, bottom: `${Math.max(5, Math.min(95, report.decisions[report.decisions.length - 1]?.newSatisfaction ?? 50))}%` }}
+                                    style={{ left: `${Math.max(5, Math.min(95, report.finalEconomy))}%`, bottom: `${Math.max(5, Math.min(95, report.finalEcology))}%` }}
                                 >
                                     <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-foreground text-background text-[10px] font-bold px-2 py-0.5 rounded shadow-sm whitespace-nowrap">
-                                        You ({report.finalScore}%)
+                                        You
                                     </div>
                                 </div>
                             </div>
@@ -283,7 +319,7 @@ export default function ReportPageClient({ report: initial, peerReports = [] }: 
                                 <ul className="text-xs text-foreground/80 space-y-2 list-disc list-inside">
                                     {peerReports.slice(0, 3).map((p, i) => (
                                         <li key={i} className="leading-relaxed">
-                                            A peer who scored <span className="font-semibold text-foreground">{p.final_score}%</span> made {p.decision_count} decisions, starting with: <span className="italic">"{p.decisions_summary[0]}..."</span>
+                                            A peer who scored <span className="font-semibold text-foreground">{p.final_society}%</span> in Society made {p.decision_count} decisions, starting with: <span className="italic">"{p.decisions_summary[0]}..."</span>
                                         </li>
                                     ))}
                                 </ul>

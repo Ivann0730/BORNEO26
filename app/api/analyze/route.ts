@@ -46,6 +46,9 @@ export async function POST(request: NextRequest) {
             ...result,
             headline: { ...headline, resolvedLat, resolvedLng },
             location: resolvedLocation,
+            initialEcology: 50,
+            initialEconomy: 50,
+            initialSociety: 50,
         } as Scenario;
 
         // Force camera to orbit the exact resolved coordinates rather than LLM hallucinations

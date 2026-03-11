@@ -119,8 +119,9 @@ export default function SimPage() {
             .generateReport(
                 sim.location,
                 sim.selectedHeadline,
-                sim.currentScore,
-                sim.satisfactionScore,
+                sim.currentEcology,
+                sim.currentEconomy,
+                sim.societyScore,
                 sim.decisions,
                 "Anonymous",
                 sim.sectorStakeholders,

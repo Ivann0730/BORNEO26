@@ -13,8 +13,9 @@ interface UseReportReturn {
     generateReport: (
         location: Location,
         headline: ClimateHeadline,
-        finalScore: number,
-        finalSatisfaction: number,
+        finalEcology: number,
+        finalEconomy: number,
+        finalSociety: number,
         decisions: DecisionResult[],
         userName: string,
         sectorStakeholders: any[],
@@ -35,8 +36,9 @@ export function useReport(): UseReportReturn {
         async (
             location: Location,
             headline: ClimateHeadline,
-            finalScore: number,
-            finalSatisfaction: number,
+            finalEcology: number,
+            finalEconomy: number,
+            finalSociety: number,
             decisions: DecisionResult[],
             userName: string,
             sectorStakeholders: any[],
@@ -54,8 +56,9 @@ export function useReport(): UseReportReturn {
                     body: JSON.stringify({
                         location,
                         headline,
-                        finalScore,
-                        finalSatisfaction,
+                        finalEcology,
+                        finalEconomy,
+                        finalSociety,
                         decisions,
                         userName,
                         sectorStakeholders,
@@ -99,7 +102,9 @@ export function useReport(): UseReportReturn {
                     userName: data.user_name ?? "",
                     location: data.location as Location,
                     headline: data.headline as ClimateHeadline,
-                    finalScore: data.final_score,
+                    finalEcology: data.final_ecology,
+                    finalEconomy: data.final_economy,
+                    finalSociety: data.final_society,
                     decisions: data.decisions as DecisionResult[],
                     verdict: data.verdict ?? "",
                     createdAt: data.created_at,
@@ -107,7 +112,7 @@ export function useReport(): UseReportReturn {
                     predictionRanking: data.prediction_ranking,
                     predictionRisk: data.prediction_risk,
                     predictionEvaluation: data.prediction_evaluation,
-                } as ReportSession;
+                };
             } catch {
                 return null;
             }

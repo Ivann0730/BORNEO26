@@ -47,8 +47,9 @@ export const decisionBodySchema = z.object({
         id: z.string(),
         context: z.string(),
         location: locationSchema,
-        headline: headlineSchema,
-        initialScore: z.number(),
+        initialEcology: z.number(),
+        initialEconomy: z.number(),
+        initialSociety: z.number(),
         hints: z.array(z.string()),
         cameraTarget: z.object({
             center: z.tuple([z.number(), z.number()]),
@@ -67,18 +68,20 @@ export const decisionBodySchema = z.object({
     }),
     decisionText: z.string().min(1),
     round: z.number().int().min(1).max(MAX_DECISIONS),
-    previousScore: z.number().int().min(0).max(100),
-    previousSatisfaction: z.number().int().min(0).max(100),
+    previousEcology: z.number().min(0).max(100),
+    previousEconomy: z.number().min(0).max(100),
+    previousSociety: z.number().min(0).max(100),
+    sectorApprovalsList: z.string(),
     history: z.array(z.unknown()),
 });
 
 /* ────────── /api/report body ────────── */
 
 export const reportBodySchema = z.object({
-    location: locationSchema,
     headline: headlineSchema,
-    finalScore: z.number().int().min(0).max(100),
-    finalSatisfaction: z.number().int().min(0).max(100),
+    finalEcology: z.number().int().min(0).max(100),
+    finalEconomy: z.number().int().min(0).max(100),
+    finalSociety: z.number().int().min(0).max(100),
     decisions: z.array(z.unknown()).min(1),
     userName: z.string().min(1).max(100),
     sectorStakeholders: z.array(z.unknown()).optional(),

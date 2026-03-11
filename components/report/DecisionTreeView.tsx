@@ -57,8 +57,8 @@ export default function DecisionTreeView({
             const altId = `alt-${i}`;
             const prevId = i === 0 ? "start" : `decision-${i - 1}`;
 
-            const isNegative = d.scoreDelta < 0;
-            const deltaLabel = `${d.scoreDelta >= 0 ? "+" : ""}${d.scoreDelta}`;
+            const isNegative = d.ecologyDelta < 0;
+            const deltaLabel = `${d.ecologyDelta >= 0 ? "+" : ""}${d.ecologyDelta} Eco`;
             const isFailNode = isFailed && i === decisions.length - 1;
 
             n.push({

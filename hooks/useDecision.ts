@@ -8,8 +8,10 @@ interface UseDecisionReturn {
         scenario: Scenario,
         decisionText: string,
         round: number,
-        previousScore: number,
-        previousSatisfaction: number,
+        previousEcology: number,
+        previousEconomy: number,
+        previousSociety: number,
+        sectorApprovalsList: string,
         history: DecisionResult[]
     ) => Promise<DecisionResult | null>;
     isSubmitting: boolean;
@@ -25,8 +27,10 @@ export function useDecision(): UseDecisionReturn {
             scenario: Scenario,
             decisionText: string,
             round: number,
-            previousScore: number,
-            previousSatisfaction: number,
+            previousEcology: number,
+            previousEconomy: number,
+            previousSociety: number,
+            sectorApprovalsList: string,
             history: DecisionResult[]
         ): Promise<DecisionResult | null> => {
             setIsSubmitting(true);
@@ -41,8 +45,10 @@ export function useDecision(): UseDecisionReturn {
                         scenario,
                         decisionText,
                         round,
-                        previousScore,
-                        previousSatisfaction,
+                        previousEcology,
+                        previousEconomy,
+                        previousSociety,
+                        sectorApprovalsList,
                         history,
                     }),
                 });

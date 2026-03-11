@@ -22,6 +22,13 @@ interface ZoneLegendProps {
 export default function ZoneLegend({ sectorTrusts, activeSectorId, activeSectorDelta }: ZoneLegendProps) {
     const [isOpen, setIsOpen] = useState(true);
 
+    const sortedZones = [...ZONE_TYPES].sort((a, b) => {
+        const scoreA = sectorTrusts && sectorTrusts[a.label] !== undefined ? sectorTrusts[a.label] : -1;
+        const scoreB = sectorTrusts && sectorTrusts[b.label] !== undefined ? sectorTrusts[b.label] : -1;
+        if (scoreB !== scoreA) return scoreB - scoreA;
+        return a.label.localeCompare(b.label);
+    });
+
     return (
         <div className="fixed top-24 left-4 z-[1000] sm:top-20 pointer-events-auto">
             <button
@@ -39,7 +46,7 @@ export default function ZoneLegend({ sectorTrusts, activeSectorId, activeSectorD
             {isOpen && (
                 <div className="mt-2 rounded-xl bg-card/90 backdrop-blur-md border border-border p-3 shadow-lg animate-in fade-in slide-in-from-top-2 duration-200 w-[240px]">
                     <div className="flex flex-col gap-0.25">
-                        {ZONE_TYPES.map((zone) => {
+                        {sortedZones.map((zone) => {
                             const isActive = activeSectorId === zone.label;
                             const delta = activeSectorDelta;
 
@@ -65,9 +72,9 @@ export default function ZoneLegend({ sectorTrusts, activeSectorId, activeSectorD
                                         {sectorTrusts && sectorTrusts[zone.label] !== undefined && (
                                             <div className="flex items-center gap-2 shrink-0 pl-1">
                                                 <div className="w-8 h-1.5 bg-muted/60 rounded-full overflow-hidden">
-                                                    <div className={`h-full transition-all duration-1000 ${sectorTrusts[zone.label] >= 70 ? 'bg-emerald-500' : sectorTrusts[zone.label] <= 30 ? 'bg-red-500' : 'bg-primary'}`} style={{ width: `${sectorTrusts[zone.label]}%` }} />
+                                                    <div className="h-full transition-all duration-1000" style={{ width: `${sectorTrusts[zone.label]}%`, backgroundColor: zone.color }} />
                                                 </div>
-                                                <span className={`text-[10px] w-[26px] text-right font-bold ${sectorTrusts[zone.label] >= 70 ? 'text-emerald-500' : sectorTrusts[zone.label] <= 30 ? 'text-red-500' : 'text-primary'}`}>
+                                                <span className="text-[10px] w-[26px] text-right font-bold" style={{ color: zone.color }}>
                                                     {sectorTrusts[zone.label]}%
                                                 </span>
                                             </div>

@@ -25,8 +25,9 @@ interface SimulationState {
     scenario: Scenario | null;
     decisions: DecisionResult[];
     currentRound: number;
-    currentScore: number;
-    satisfactionScore: number;
+    currentEcology: number;
+    currentEconomy: number;
+    societyScore: number;
     hintsUsedRounds: number[];
     reportSlug: string | null;
     isLoading: boolean;
@@ -46,8 +47,9 @@ const initialState: SimulationState = {
     scenario: null,
     decisions: [],
     currentRound: 1,
-    currentScore: 50,
-    satisfactionScore: INITIAL_SATISFACTION,
+    currentEcology: 50,
+    currentEconomy: 50,
+    societyScore: INITIAL_SATISFACTION,
     hintsUsedRounds: [],
     reportSlug: null,
     isLoading: false,
@@ -98,8 +100,8 @@ export function useSimulation() {
                     name: persona.name,
                     role: persona.role,
                     avatarEmoji: persona.avatarEmoji,
-                    initialApproval: scenario.initialScore,
-                    approval: scenario.initialScore,
+                    initialApproval: scenario.initialSociety,
+                    approval: scenario.initialSociety,
                     quotes: [],
                 };
             });
@@ -107,7 +109,9 @@ export function useSimulation() {
             return {
                 ...prev,
                 scenario,
-                currentScore: scenario.initialScore,
+                currentEcology: scenario.initialEcology,
+                currentEconomy: scenario.initialEconomy,
+                societyScore: scenario.initialSociety,
                 sectorStakeholders: initialStakeholders,
                 step: "scenario", // Advance straight to scenario instead of persona
                 isLoading: false,
@@ -132,7 +136,7 @@ export function useSimulation() {
     const addDecision = useCallback((result: DecisionResult) => {
         setState((prev) => {
             const decisions = [...prev.decisions, result];
-            const newSatisfaction = result.newSatisfaction;
+            const newSociety = result.societyDelta !== undefined ? result.societyDelta : result.newSociety;
 
             // Update sector stakeholders based on affected sectors
             const updatedStakeholders = prev.sectorStakeholders.map(s => {
@@ -140,25 +144,35 @@ export function useSimulation() {
                 if (impact) {
                     return {
                         ...s,
-                        approval: Math.max(0, Math.min(100, s.approval + (impact.trustDelta !== undefined ? impact.trustDelta : (result.satisfactionDelta || 0)))),
+                        approval: Math.max(0, Math.min(100, s.approval + (impact.trustDelta !== undefined ? impact.trustDelta : (result.societyDelta || 0)))),
                         quotes: [...(s.quotes || []), impact.explanation]
                     };
                 }
                 return s;
             });
 
-            // Calculate new score based on average sector approval
-            const currentScore = Math.round(updatedStakeholders.reduce((acc, s) => acc + s.approval, 0) / updatedStakeholders.length);
-            const satisfactionScore = Math.round(updatedStakeholders.reduce((acc, s) => acc + s.approval, 0) / updatedStakeholders.length);
+            // Apply Ecology and Economy deltas
+            let newEcology = Math.max(0, Math.min(100, prev.currentEcology + result.ecologyDelta));
+            let newEconomy = Math.max(0, Math.min(100, prev.currentEconomy + result.economyDelta));
+            
+            // "Ecological Drag" mechanic: If ecology dropped too low previously, it drags down the economy and trust this round
+            if (prev.currentEcology < 30) {
+                newEconomy = Math.max(0, newEconomy - 5);
+                // The drag on sector trust is handled by the AI's prompts, but we can enforce it fundamentally here too
+            }
+
+            // Calculate new Society score based on average sector approval
+            const societyScore = Math.round(updatedStakeholders.reduce((acc, s) => acc + s.approval, 0) / updatedStakeholders.length);
 
             // Check failstate
-            const isFailed = satisfactionScore <= FAILSTATE_THRESHOLD;
+            const isFailed = societyScore <= FAILSTATE_THRESHOLD || newEconomy <= 10;
 
             return {
                 ...prev,
                 decisions,
-                currentScore,
-                satisfactionScore,
+                currentEcology: newEcology,
+                currentEconomy: newEconomy,
+                societyScore,
                 sectorStakeholders: updatedStakeholders,
                 isLoading: false,
                 isFailed,
@@ -181,13 +195,13 @@ export function useSimulation() {
             // Also append any new sectors that were affected but not in initial predictions
             if (!stakeholders.some(s => s.sectorId === sectorId)) {
                 const persona = SECTOR_PERSONAS[sectorId] || { name: "Community Member", role: "Local Resident", avatarEmoji: "🙋" };
-                const newApproval = Math.max(0, Math.min(100, prev.currentScore + approvalDelta));
+                const newApproval = Math.max(0, Math.min(100, prev.societyScore + approvalDelta));
                 stakeholders.push({
                     sectorId,
                     name: persona.name,
                     role: persona.role,
                     avatarEmoji: persona.avatarEmoji,
-                    initialApproval: prev.currentScore,
+                    initialApproval: prev.societyScore,
                     approval: newApproval,
                     quotes: [quote],
                 });

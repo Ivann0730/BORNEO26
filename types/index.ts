@@ -35,8 +35,10 @@ export interface Scenario {
   headline: ClimateHeadline;
   location: Location;
   context: string;
-  affectedArea: GeoJSON.Feature;
-  initialScore: number;
+  // Initial conditions when the scenario drops
+  initialEcology: number;
+  initialEconomy: number;
+  initialSociety: number; // Represents average starting public trust
   hints: string[];
   cameraTarget: CameraTarget;
 }
@@ -88,10 +90,21 @@ export interface DecisionResult {
   round: number;
   userInput: string;
   interpretation: string;
-  scoreDelta: number;
-  newScore: number;
-  satisfactionDelta: number;
-  newSatisfaction: number;
+  /** AI's justification for the changes */
+  justification: string;
+  /** Impact on ecology (0-100 scale shift) */
+  ecologyDelta: number;
+  /** The running total of the ecology score after this decision */
+  newEcology: number;
+  /** Impact on economy (0-100 scale shift) */
+  economyDelta: number;
+  /** The running total of the economy score after this decision */
+  newEconomy: number;
+  /** Impact on society (0-100 scale shift), calculated from sector averages */
+  societyDelta?: number;
+  /** The running total of the society score after this decision */
+  newSociety?: number;
+  /** Impact on specific sector stakeholders */
   affectedSectors: AffectedSector[];
   mapInstructions: MapInstruction[];
   explanation: string;
@@ -120,7 +133,9 @@ export interface ReportSession {
   userName: string;
   location: Location;
   headline: ClimateHeadline;
-  finalScore: number;
+  finalEcology: number;
+  finalEconomy: number;
+  finalSociety: number;
   decisions: DecisionResult[];
   verdict: string;
   createdAt: string;
@@ -132,8 +147,9 @@ export interface ReportSession {
 
 export interface PeerReport {
   headline_id: string;
-  final_score: number;
-  final_satisfaction: number;
+  final_ecology: number;
+  final_economy: number;
+  final_society: number;
   decision_count: number;
   decisions_summary: string[];
 }

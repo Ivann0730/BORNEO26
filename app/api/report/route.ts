@@ -18,16 +18,18 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const { location, headline, finalScore, finalSatisfaction, decisions, userName, sectorStakeholders, predictionRanking, predictionRisk, predictionEvaluation } =
+        const { headline, finalEcology, finalEconomy, finalSociety, decisions, userName, sectorStakeholders, predictionRanking, predictionRisk, predictionEvaluation } =
             parsed.data;
 
         const slug = nanoid(8);
 
         const verdict = await getGeminiText(
             buildVerdictPrompt(
-                location,
+                { name: headline.locationTag, lat: 0, lng: 0, country: "", region: "" }, // Mock Location object, buildVerdictPrompt only uses name
                 headline,
-                finalScore,
+                finalEcology,
+                finalEconomy,
+                finalSociety,
                 decisions as DecisionResult[]
             )
         );
@@ -40,12 +42,13 @@ export async function POST(request: NextRequest) {
         const { error } = await supabaseServer.from("reports").insert({
             slug,
             user_name: userName,
-            location,
+            location: headline.locationTag, // Just fallback since location was removed from schema body for report
             headline,
-            final_score: finalScore,
+            final_ecology: finalEcology,
+            final_economy: finalEconomy,
+            final_society: finalSociety,
             decisions,
             verdict,
-            final_satisfaction: finalSatisfaction,
             decision_count: decisionCount,
             decisions_summary: decisionsSummary,
             headline_id: headline.id,

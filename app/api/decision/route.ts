@@ -21,38 +21,40 @@ export async function POST(request: NextRequest) {
             scenario,
             decisionText,
             round,
-            previousScore,
-            previousSatisfaction,
+            previousEcology,
+            previousEconomy,
+            previousSociety, // We'll pass this in for logging/history, though not explicitly used in prompt
+            sectorApprovalsList,
             history,
         } = parsed.data;
 
-        const fullScenario = {
+        // Use type assertion properly with 'unknown' step since we stripped some fields for transit
+        const fullScenario: Scenario = {
             ...scenario,
-            headline: scenario.headline,
-            location: scenario.location,
-        } as Scenario;
+        } as unknown as Scenario;
 
         const prompt = buildDecisionPrompt(
             fullScenario,
             decisionText,
             round,
-            previousScore,
-            previousSatisfaction,
+            previousEcology,
+            previousEconomy,
+            sectorApprovalsList, // BUG-FIX: need to pass actual list, we'll fix this in the next pass when we update useDecision call site
             history as DecisionResult[]
         );
 
         const result = await parseGeminiJson(prompt, decisionResultSchema);
 
         // Clamp values server-side
-        const clampedScoreDelta = Math.max(-30, Math.min(30, result.scoreDelta));
-        const clampedSatDelta = Math.max(-20, Math.min(20, result.satisfactionDelta ?? 0));
+        const clampedEcologyDelta = Math.max(-30, Math.min(30, result.ecologyDelta));
+        const clampedEconomyDelta = Math.max(-30, Math.min(30, result.economyDelta));
 
         const clamped = {
             ...result,
-            scoreDelta: clampedScoreDelta,
-            newScore: Math.max(0, Math.min(100, previousScore + clampedScoreDelta)),
-            satisfactionDelta: clampedSatDelta,
-            newSatisfaction: Math.max(0, Math.min(100, previousSatisfaction + clampedSatDelta)),
+            ecologyDelta: clampedEcologyDelta,
+            newEcology: Math.max(0, Math.min(100, previousEcology + clampedEcologyDelta)),
+            economyDelta: clampedEconomyDelta,
+            newEconomy: Math.max(0, Math.min(100, previousEconomy + clampedEconomyDelta)),
         } as DecisionResult;
 
         return NextResponse.json(clamped);
