@@ -63,10 +63,22 @@ export interface ClimateTerm {
   definition: string;
 }
 
+/* ────────────────── Sector Stakeholder ───────────────────── */
+export interface SectorStakeholder {
+  sectorId: string;
+  name: string;
+  role: string;
+  avatarEmoji: string;
+  initialApproval: number;
+  approval: number;
+  quotes?: string[];
+}
+
 /* ─────────────────── Affected Sector ───────────────────── */
 export interface AffectedSector {
-  sector: "Residential" | "Commercial" | "Industrial" | "Institutional" | "Central Business District" | "Mixed Use" | "Green/Open Space";
+  sector: "Residential" | "Commercial" | "Industrial" | "Institutional" | "Business District" | "Mixed Use" | "Open Space";
   explanation: string;
+  trustDelta: number;
   cameraTarget?: CameraTarget;
   mapInstructions: MapInstruction[];
 }
@@ -88,6 +100,21 @@ export interface DecisionResult {
   alternativeMapInstructions: MapInstruction[];
 }
 
+/* ─────────────────── Decision Evaluation ─────────────────── */
+export interface DecisionEvaluation {
+  status: "accepted" | "rejected" | "needs_more_info";
+  justification: string;
+  hint: string;
+  capitalCost?: number; // 1-40, defined when accepted
+}
+
+/* ───────────────── Prediction Evaluation ───────────────── */
+export interface PredictionEvaluation {
+  actualTop3: { sector: string; explanation: string }[];
+  score: number;
+  feedback: string;
+}
+
 /* ─────────────────── Report Session ──────────────────────── */
 export interface ReportSession {
   slug: string;
@@ -98,6 +125,19 @@ export interface ReportSession {
   decisions: DecisionResult[];
   verdict: string;
   createdAt: string;
+  policyCapitalHistory?: { starting: number, roundCost: number, ending: number }[];
+  sectorStakeholders?: SectorStakeholder[];
+  predictionRanking?: string[];
+  predictionRisk?: string[];
+  predictionEvaluation?: PredictionEvaluation;
+}
+
+export interface PeerReport {
+  headline_id: string;
+  final_score: number;
+  final_satisfaction: number;
+  decision_count: number;
+  decisions_summary: string[];
 }
 
 /* ──────────────── Simulation Step ─────────────────────────── */

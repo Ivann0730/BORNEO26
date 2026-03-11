@@ -7,7 +7,10 @@ import type {
     ClimateHeadline,
     Scenario,
     DecisionResult,
+    SectorStakeholder,
+    PredictionEvaluation,
 } from "@/types";
+import { SECTOR_PERSONAS } from "@/lib/sectorPersonas";
 import {
     MAX_DECISIONS,
     INITIAL_SATISFACTION,
@@ -29,6 +32,12 @@ interface SimulationState {
     isLoading: boolean;
     error: string | null;
     isFailed: boolean;
+    policyCapital: number;
+    policyCapitalHistory: { starting: number, roundCost: number, ending: number }[];
+    sectorStakeholders: SectorStakeholder[];
+    predictionRanking: string[];
+    predictionRisk: string;
+    predictionEvaluation: PredictionEvaluation | null;
 }
 
 const initialState: SimulationState = {
@@ -46,6 +55,12 @@ const initialState: SimulationState = {
     isLoading: false,
     error: null,
     isFailed: false,
+    policyCapital: 100,
+    policyCapitalHistory: [],
+    sectorStakeholders: [],
+    predictionRanking: [],
+    predictionRisk: "",
+    predictionEvaluation: null,
 };
 
 export function useSimulation() {
@@ -75,14 +90,41 @@ export function useSimulation() {
     }, []);
 
 
-    const setScenario = useCallback((scenario: Scenario) => {
-        setState((prev) => ({
-            ...prev,
-            scenario,
-            currentScore: scenario.initialScore,
-            step: "scenario", // Advance straight to scenario instead of persona
-            isLoading: false,
-        }));
+    const setScenario = useCallback((scenario: Scenario, sectors?: string[]) => {
+        setState((prev) => {
+            // Default to the 7 main city sectors where actual impacts are measured
+            const defaultSectors = sectors && sectors.length > 0 ? sectors : ["Residential", "Commercial", "Industrial", "Institutional", "Business District", "Mixed Use", "Open Space"];
+
+            const initialStakeholders = defaultSectors.map(s => {
+                const persona = SECTOR_PERSONAS[s] || { name: "Community Member", role: "Local Resident", avatarEmoji: "🙋" };
+                return {
+                    sectorId: s,
+                    name: persona.name,
+                    role: persona.role,
+                    avatarEmoji: persona.avatarEmoji,
+                    initialApproval: scenario.initialScore,
+                    approval: scenario.initialScore,
+                    quotes: [],
+                };
+            });
+
+            return {
+                ...prev,
+                scenario,
+                currentScore: scenario.initialScore,
+                sectorStakeholders: initialStakeholders,
+                step: "scenario", // Advance straight to scenario instead of persona
+                isLoading: false,
+            };
+        });
+    }, []);
+
+    const setPredictions = useCallback((ranking: string[], risk: string) => {
+        setState((prev) => ({ ...prev, predictionRanking: ranking, predictionRisk: risk }));
+    }, []);
+
+    const setPredictionEvaluation = useCallback((evaluation: PredictionEvaluation) => {
+        setState((prev) => ({ ...prev, predictionEvaluation: evaluation }));
     }, []);
 
     const startDecisions = useCallback(() => {
@@ -91,22 +133,81 @@ export function useSimulation() {
 
     // BUG-04 fix: addDecision does NOT auto-advance to complete.
     // The sim page calls advanceAfterExplanation() after showing the explanation.
-    const addDecision = useCallback((result: DecisionResult) => {
+    const addDecision = useCallback((result: DecisionResult, capitalCost?: number) => {
         setState((prev) => {
             const decisions = [...prev.decisions, result];
             const newSatisfaction = result.newSatisfaction;
 
+            const cost = capitalCost ?? 0;
+            const newCapital = prev.policyCapital - cost;
+
+            const capitalHistoryEntry = {
+                starting: prev.policyCapital,
+                roundCost: cost,
+                ending: newCapital
+            };
+
+            // Update sector stakeholders based on affected sectors
+            const updatedStakeholders = prev.sectorStakeholders.map(s => {
+                const impact = result.affectedSectors.find(as => as.sector === s.sectorId);
+                if (impact) {
+                    return {
+                        ...s,
+                        approval: Math.max(0, Math.min(100, s.approval + (impact.trustDelta !== undefined ? impact.trustDelta : (result.satisfactionDelta || 0)))),
+                        quotes: [...(s.quotes || []), impact.explanation]
+                    };
+                }
+                return s;
+            });
+
+            // Calculate new score based on average sector approval
+            const currentScore = Math.round(updatedStakeholders.reduce((acc, s) => acc + s.approval, 0) / updatedStakeholders.length);
+            const satisfactionScore = Math.round(updatedStakeholders.reduce((acc, s) => acc + s.approval, 0) / updatedStakeholders.length);
+
             // Check failstate
-            const isFailed = newSatisfaction <= FAILSTATE_THRESHOLD;
+            const isFailed = satisfactionScore <= FAILSTATE_THRESHOLD;
 
             return {
                 ...prev,
                 decisions,
-                currentScore: result.newScore,
-                satisfactionScore: newSatisfaction,
+                currentScore,
+                satisfactionScore,
+                policyCapital: newCapital,
+                policyCapitalHistory: [...prev.policyCapitalHistory, capitalHistoryEntry],
+                sectorStakeholders: updatedStakeholders,
                 isLoading: false,
                 isFailed,
             };
+        });
+    }, []);
+
+    const updateSectorStakeholder = useCallback((sectorId: string, quote: string, approvalDelta: number) => {
+        setState((prev) => {
+            const stakeholders = prev.sectorStakeholders.map(s => {
+                if (s.sectorId === sectorId) {
+                    return {
+                        ...s,
+                        approval: Math.max(0, Math.min(100, s.approval + approvalDelta)),
+                        quotes: [...(s.quotes || []), quote],
+                    };
+                }
+                return s;
+            });
+            // Also append any new sectors that were affected but not in initial predictions
+            if (!stakeholders.some(s => s.sectorId === sectorId)) {
+                const persona = SECTOR_PERSONAS[sectorId] || { name: "Community Member", role: "Local Resident", avatarEmoji: "🙋" };
+                const newApproval = Math.max(0, Math.min(100, prev.currentScore + approvalDelta));
+                stakeholders.push({
+                    sectorId,
+                    name: persona.name,
+                    role: persona.role,
+                    avatarEmoji: persona.avatarEmoji,
+                    initialApproval: prev.currentScore,
+                    approval: newApproval,
+                    quotes: [quote],
+                });
+            }
+            return { ...prev, sectorStakeholders: stakeholders };
         });
     }, []);
 
@@ -165,8 +266,11 @@ export function useSimulation() {
         setHeadlines,
         selectHeadline,
         setScenario,
+        setPredictions,
+        setPredictionEvaluation,
         startDecisions,
         addDecision,
+        updateSectorStakeholder,
         advanceAfterExplanation,
         endSimulationEarly,
         recordHintUsed,

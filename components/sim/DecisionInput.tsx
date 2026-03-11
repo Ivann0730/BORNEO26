@@ -8,23 +8,42 @@ interface DecisionInputProps {
     onSubmit: (text: string) => void;
     isSubmitting: boolean;
     disabled?: boolean;
+    inputMode: "guided" | "freeform";
+    onInputModeChange: (mode: "guided" | "freeform") => void;
 }
 
 export default function DecisionInput({
     onSubmit,
     isSubmitting,
     disabled = false,
+    inputMode,
+    onInputModeChange,
 }: DecisionInputProps) {
-    const [mode, setMode] = useState<"text" | "voice">("text");
+    const [inputType, setInputType] = useState<"text" | "voice">("text");
     const [textValue, setTextValue] = useState("");
+    const [guidedFields, setGuidedFields] = useState({ who: "", what: "", action: "" });
+
     const { isListening, transcript, isSupported, startListening, stopListening } =
         useVoice();
 
-    function handleSubmit() {
-        const value = mode === "voice" ? transcript : textValue;
-        if (!value.trim()) return;
-        onSubmit(value.trim());
+    function handleModeSwitch(newMode: "guided" | "freeform") {
         setTextValue("");
+        setGuidedFields({ who: "", what: "", action: "" });
+        onInputModeChange(newMode);
+    }
+
+    function handleSubmit() {
+        if (inputMode === "guided") {
+            if (!guidedFields.who.trim() && !guidedFields.what.trim() && !guidedFields.action.trim()) return;
+            const combined = `Affected parties: ${guidedFields.who}\nResource/trade-off: ${guidedFields.what}\nProposed action: ${guidedFields.action}`;
+            onSubmit(combined);
+            setGuidedFields({ who: "", what: "", action: "" });
+        } else {
+            const value = inputType === "voice" ? transcript : textValue;
+            if (!value.trim()) return;
+            onSubmit(value.trim());
+            setTextValue("");
+        }
     }
 
     function handleKeyDown(e: React.KeyboardEvent) {
@@ -34,38 +53,112 @@ export default function DecisionInput({
         }
     }
 
-    const hasContent = mode === "voice" ? transcript.trim().length > 0 : textValue.trim().length > 0;
+    const hasContent = inputMode === "guided"
+        ? (guidedFields.who.trim().length > 0 || guidedFields.what.trim().length > 0 || guidedFields.action.trim().length > 0)
+        : (inputType === "voice" ? transcript.trim().length > 0 : textValue.trim().length > 0);
 
     return (
         <div className="flex flex-col gap-3 w-full max-w-sm mx-auto sm:max-w-md">
-            {/* Mode toggle */}
-            <div className="flex items-center justify-center gap-1 rounded-xl bg-muted p-1">
-                <button
-                    onClick={() => setMode("text")}
-                    className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-medium transition-all ${mode === "text"
-                            ? "bg-card text-foreground shadow-sm"
-                            : "text-muted-foreground hover:text-foreground"
-                        }`}
-                >
-                    <Type className="h-3.5 w-3.5" />
-                    Type
-                </button>
-                {isSupported && (
+            {/* Guided / Freeform mode toggle */}
+            <div className="flex flex-col items-center gap-1 mb-1">
+                <div className="flex p-0.5 rounded-full border border-border bg-card shadow-sm">
                     <button
-                        onClick={() => setMode("voice")}
-                        className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-medium transition-all ${mode === "voice"
-                                ? "bg-card text-foreground shadow-sm"
-                                : "text-muted-foreground hover:text-foreground"
-                            }`}
+                        onClick={() => handleModeSwitch("guided")}
+                        className={`px-4 py-1.5 text-xs font-semibold rounded-full transition-colors ${inputMode === "guided" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
                     >
-                        <Mic className="h-3.5 w-3.5" />
-                        Speak
+                        Guided
                     </button>
-                )}
+                    <button
+                        onClick={() => handleModeSwitch("freeform")}
+                        className={`px-4 py-1.5 text-xs font-semibold rounded-full transition-colors ${inputMode === "freeform" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                    >
+                        Freeform
+                    </button>
+                </div>
+                <p className="text-[10px] text-muted-foreground text-center px-4">
+                    Guided mode helps structure your thinking. Switch to Freeform if you're confident.
+                </p>
             </div>
 
+            {inputMode === "freeform" && (
+                <div className="flex items-center justify-center gap-1 rounded-xl bg-muted p-1 border border-border/50">
+                    <button
+                        onClick={() => setInputType("text")}
+                        className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-medium transition-all ${inputType === "text"
+                            ? "bg-card text-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground"
+                            }`}
+                    >
+                        <Type className="h-3.5 w-3.5" />
+                        Type
+                    </button>
+                    {isSupported && (
+                        <button
+                            onClick={() => setInputType("voice")}
+                            className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-medium transition-all ${inputType === "voice"
+                                ? "bg-card text-foreground shadow-sm"
+                                : "text-muted-foreground hover:text-foreground"
+                                }`}
+                        >
+                            <Mic className="h-3.5 w-3.5" />
+                            Speak
+                        </button>
+                    )}
+                </div>
+            )}
+
             {/* Input area */}
-            {mode === "text" ? (
+            {inputMode === "guided" ? (
+                <div className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-3 border-l-2 border-primary/40 pl-3">
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-xs font-medium text-foreground ml-1">Who does this affect?</label>
+                            <input
+                                type="text"
+                                value={guidedFields.who}
+                                onChange={(e) => setGuidedFields(prev => ({ ...prev, who: e.target.value }))}
+                                placeholder="e.g. coastal fishing communities, city planners"
+                                disabled={disabled || isSubmitting}
+                                className="w-full rounded-xl border border-border bg-card px-4 py-2.5 text-sm placeholder:text-muted-foreground outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all disabled:opacity-50"
+                            />
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-xs font-medium text-foreground ml-1">What resource or trade-off does this require?</label>
+                            <input
+                                type="text"
+                                value={guidedFields.what}
+                                onChange={(e) => setGuidedFields(prev => ({ ...prev, what: e.target.value }))}
+                                placeholder="e.g. $4M in emergency funds, 6-month timeline"
+                                disabled={disabled || isSubmitting}
+                                className="w-full rounded-xl border border-border bg-card px-4 py-2.5 text-sm placeholder:text-muted-foreground outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all disabled:opacity-50"
+                            />
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-xs font-medium text-foreground ml-1">What is your proposed action?</label>
+                            <textarea
+                                value={guidedFields.action}
+                                onChange={(e) => setGuidedFields(prev => ({ ...prev, action: e.target.value }))}
+                                placeholder="Describe your decision clearly. The more specific, the better."
+                                disabled={disabled || isSubmitting}
+                                rows={2}
+                                className="w-full resize-none rounded-xl border border-border bg-card px-4 py-3 text-sm placeholder:text-muted-foreground outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all disabled:opacity-50"
+                            />
+                        </div>
+                    </div>
+                    <button
+                        onClick={handleSubmit}
+                        disabled={!hasContent || disabled || isSubmitting}
+                        className="flex items-center justify-center gap-2 w-full rounded-xl bg-primary text-primary-foreground py-3 text-sm font-semibold transition-all hover:brightness-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {isSubmitting ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                            <Send className="h-4 w-4" />
+                        )}
+                        Submit Policy
+                    </button>
+                </div>
+            ) : inputType === "text" ? (
                 <div className="flex items-end gap-2">
                     <textarea
                         value={textValue}
@@ -102,8 +195,8 @@ export default function DecisionInput({
                             onClick={isListening ? stopListening : startListening}
                             disabled={disabled || isSubmitting}
                             className={`flex items-center justify-center h-14 w-14 rounded-full transition-all active:scale-95 ${isListening
-                                    ? "bg-destructive text-white animate-pulse"
-                                    : "bg-primary text-primary-foreground"
+                                ? "bg-destructive text-white animate-pulse"
+                                : "bg-primary text-primary-foreground"
                                 }`}
                         >
                             {isListening ? (

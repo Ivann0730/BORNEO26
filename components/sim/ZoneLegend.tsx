@@ -13,11 +13,17 @@ const ZONE_TYPES = [
     { label: "Open Space", color: "#22c55e" },
 ];
 
-export default function ZoneLegend() {
+interface ZoneLegendProps {
+    sectorTrusts?: Record<string, number>;
+    activeSectorId?: string;
+    activeSectorDelta?: number;
+}
+
+export default function ZoneLegend({ sectorTrusts, activeSectorId, activeSectorDelta }: ZoneLegendProps) {
     const [isOpen, setIsOpen] = useState(true);
 
     return (
-        <div className="fixed top-16 left-4 z-[999]">
+        <div className="fixed top-24 left-4 z-[1000] sm:top-20 pointer-events-auto">
             <button
                 onClick={() => setIsOpen((v) => !v)}
                 className="flex items-center gap-1.5 rounded-xl bg-card/90 backdrop-blur-md border border-border px-3 py-2 text-xs font-medium shadow-md hover:bg-card transition-colors"
@@ -31,22 +37,45 @@ export default function ZoneLegend() {
             </button>
 
             {isOpen && (
-                <div className="mt-1 rounded-xl bg-card/90 backdrop-blur-md border border-border p-3 shadow-lg animate-in fade-in slide-in-from-top-1 duration-200">
-                    <div className="flex flex-col gap-2">
-                        {ZONE_TYPES.map((zone) => (
-                            <div
-                                key={zone.label}
-                                className="flex items-center gap-2"
-                            >
-                                <span
-                                    className="h-3 w-3 rounded-full shrink-0"
-                                    style={{ backgroundColor: zone.color }}
-                                />
-                                <span className="text-[11px] text-muted-foreground">
-                                    {zone.label}
-                                </span>
-                            </div>
-                        ))}
+                <div className="mt-2 rounded-xl bg-card/90 backdrop-blur-md border border-border p-3 shadow-lg animate-in fade-in slide-in-from-top-2 duration-200 w-[240px]">
+                    <div className="flex flex-col gap-0.25">
+                        {ZONE_TYPES.map((zone) => {
+                            const isActive = activeSectorId === zone.label;
+                            const delta = activeSectorDelta;
+
+                            return (
+                                <div
+                                    key={zone.label}
+                                    className={`flex items-center gap-2 p-1.5 rounded-md transition-colors ${isActive ? 'bg-primary/5 border border-primary/20 shadow-sm' : 'border border-transparent'}`}
+                                >
+                                    <span
+                                        className="h-2.5 w-2.5 rounded-full shrink-0"
+                                        style={{ backgroundColor: zone.color }}
+                                    />
+                                    <span className="text-[11px] font-medium text-foreground whitespace-nowrap">
+                                        {zone.label}
+                                    </span>
+
+                                    <div className="flex items-center justify-end gap-1 ml-auto w-full">
+                                        {isActive && delta !== undefined && delta !== 0 && (
+                                            <span className={`text-[10px] font-bold ${delta > 0 ? "text-emerald-500" : "text-red-500"} animate-in fade-in slide-in-from-right-2 duration-300`}>
+                                                {delta > 0 ? "+" : ""}{delta}%
+                                            </span>
+                                        )}
+                                        {sectorTrusts && sectorTrusts[zone.label] !== undefined && (
+                                            <div className="flex items-center gap-2 shrink-0 pl-1">
+                                                <div className="w-8 h-1.5 bg-muted/60 rounded-full overflow-hidden">
+                                                    <div className={`h-full transition-all duration-1000 ${sectorTrusts[zone.label] >= 70 ? 'bg-emerald-500' : sectorTrusts[zone.label] <= 30 ? 'bg-red-500' : 'bg-primary'}`} style={{ width: `${sectorTrusts[zone.label]}%` }} />
+                                                </div>
+                                                <span className={`text-[10px] w-[26px] text-right font-bold ${sectorTrusts[zone.label] >= 70 ? 'text-emerald-500' : sectorTrusts[zone.label] <= 30 ? 'text-red-500' : 'text-primary'}`}>
+                                                    {sectorTrusts[zone.label]}%
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             )}

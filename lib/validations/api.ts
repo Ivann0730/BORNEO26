@@ -78,6 +78,31 @@ export const reportBodySchema = z.object({
     location: locationSchema,
     headline: headlineSchema,
     finalScore: z.number().int().min(0).max(100),
+    finalSatisfaction: z.number().int().min(0).max(100),
     decisions: z.array(z.unknown()).min(1),
     userName: z.string().min(1).max(100),
+    policyCapitalHistory: z.array(z.unknown()).optional(),
+    sectorStakeholders: z.array(z.unknown()).optional(),
+    predictionRanking: z.array(z.string()).optional(),
+    predictionRisk: z.string().optional(),
+    predictionEvaluation: z.unknown().optional(),
 });
+
+/* ────────── /api/evaluate-decision body ────────── */
+
+export const evaluateDecisionBodySchema = z.object({
+    scenarioContext: z.string().min(1),
+    decisionText: z.string().min(1),
+});
+
+/* ────────── /api/stakeholder-react body ────────── */
+
+export const stakeholderReactBodySchema = z.object({
+    sectorId: z.string().min(1),
+    personaName: z.string().min(1),
+    personaRole: z.string().min(1),
+    decision: z.string().min(1),
+    sectorOutcome: z.string().min(1),
+    currentApproval: z.number().min(0).max(100),
+});
+

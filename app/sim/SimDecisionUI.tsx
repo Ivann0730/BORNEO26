@@ -6,7 +6,10 @@ import ExplanationPanel from "@/components/sim/ExplanationPanel";
 import HintButton from "@/components/sim/HintButton";
 import DecisionInput from "@/components/sim/DecisionInput";
 import SimPanel from "@/components/sim/SimPanel";
-import type { DecisionResult } from "@/types";
+import ZoneLegend from "@/components/sim/ZoneLegend";
+import { useEvaluateDecision } from "@/hooks/useEvaluateDecision";
+import type { DecisionResult, DecisionEvaluation } from "@/types";
+import { AlertCircle, Info } from "lucide-react";
 
 interface SimDecisionUIProps {
     sim: ReturnType<typeof import("@/hooks/useSimulation").useSimulation>;
@@ -19,47 +22,87 @@ export default function SimDecisionUI({ sim, decision, map }: SimDecisionUIProps
     const [showExplanation, setShowExplanation] = useState(false);
     const [currentSectorIndex, setCurrentSectorIndex] = useState(-1);
 
+    const { evaluateDecision, isEvaluating } = useEvaluateDecision();
+    const [rejection, setRejection] = useState<DecisionEvaluation | null>(null);
+    const [pendingBudgetDecision, setPendingBudgetDecision] = useState<{ text: string, cost: number } | null>(null);
+    const [inputMode, setInputMode] = useState<"guided" | "freeform">(sim.currentRound === 1 ? "guided" : "freeform");
+
+    // Extracted simulation execution out of handleDecisionSubmit so it can be called from override
+    const executeSimulateDecision = useCallback(async (text: string, capitalCost: number) => {
+        sim.setLoading(true);
+        const result = await decision.submitDecision(
+            sim.scenario!,
+            text,
+            sim.currentRound,
+            sim.currentScore,
+            sim.satisfactionScore,
+            sim.decisions
+        );
+        if (result) {
+            sim.addDecision(result, capitalCost);
+            setLastResult(result);
+
+            if (result.affectedSectors && result.affectedSectors.length > 0) {
+                setCurrentSectorIndex(0);
+                const firstSector = result.affectedSectors[0];
+                map.addLayers(firstSector.mapInstructions);
+                if (firstSector.cameraTarget) {
+                    map.startBroll(
+                        firstSector.cameraTarget.center[0],
+                        firstSector.cameraTarget.center[1],
+                        firstSector.cameraTarget.zoom,
+                        firstSector.cameraTarget.pitch
+                    );
+                }
+            } else {
+                setCurrentSectorIndex(-1);
+                map.addLayers(result.mapInstructions);
+            }
+
+            setShowExplanation(true);
+        } else {
+            sim.setLoading(false);
+        }
+    }, [sim, decision, map]);
+
     /* ─── submit decision ─── */
     const handleDecisionSubmit = useCallback(
-        async (text: string) => {
+        async (text: string, overrideCost?: boolean) => {
             if (!sim.scenario) return;
-            sim.setLoading(true);
-            const result = await decision.submitDecision(
-                sim.scenario,
-                text,
-                sim.currentRound,
-                sim.currentScore,
-                sim.satisfactionScore,
-                sim.decisions
-            );
-            if (result) {
-                sim.addDecision(result);
-                // Start with the first sector
-                setLastResult(result);
-                
-                if (result.affectedSectors && result.affectedSectors.length > 0) {
-                    setCurrentSectorIndex(0);
-                    const firstSector = result.affectedSectors[0];
-                    map.addLayers(firstSector.mapInstructions);
-                    if (firstSector.cameraTarget) {
-                        map.startBroll(
-                            firstSector.cameraTarget.center[0],
-                            firstSector.cameraTarget.center[1],
-                            firstSector.cameraTarget.zoom,
-                            firstSector.cameraTarget.pitch
-                        );
-                    }
-                } else {
-                    setCurrentSectorIndex(-1);
-                    map.addLayers(result.mapInstructions);
-                }
-                
-                setShowExplanation(true);
-            } else {
-                sim.setLoading(false);
+
+            setRejection(null);
+
+            if (overrideCost && pendingBudgetDecision) {
+                await executeSimulateDecision(pendingBudgetDecision.text, pendingBudgetDecision.cost);
+                return;
             }
+
+            setPendingBudgetDecision(null);
+            sim.setLoading(true);
+
+            // 1. Evaluate the decision's quality first
+            const evaluation = await evaluateDecision(
+                sim.scenario.context,
+                text
+            );
+
+            if (!evaluation) {
+                // If evaluation request failed entirely, fallback to continuing
+            } else if (evaluation.status !== "accepted") {
+                // Decision is rejected or needs info! Show the hint and stop.
+                setRejection(evaluation);
+                sim.setLoading(false);
+                return;
+            } else if (evaluation.capitalCost && evaluation.capitalCost > sim.policyCapital) {
+                setPendingBudgetDecision({ text, cost: evaluation.capitalCost });
+                sim.setLoading(false);
+                return;
+            }
+
+            // 2. Decision accepted, proceed to simulate
+            await executeSimulateDecision(text, evaluation?.capitalCost || 0);
         },
-        [sim, decision, map]
+        [sim, evaluateDecision, pendingBudgetDecision, executeSimulateDecision]
     );
 
     /* ─── continue after explanation (BUG-04 fix) ─── */
@@ -73,11 +116,11 @@ export default function SimDecisionUI({ sim, decision, map }: SimDecisionUIProps
             const nextIndex = currentSectorIndex + 1;
             setCurrentSectorIndex(nextIndex);
             const nextSector = lastResult.affectedSectors[nextIndex];
-            
+
             // Note: we intentionally do NOT clear layers.
             // The sectors will accumulate persistently so the user can see all affected regions side-by-side.
             map.addLayers(nextSector.mapInstructions);
-            
+
             if (nextSector.cameraTarget) {
                 map.startBroll(
                     nextSector.cameraTarget.center[0],
@@ -91,7 +134,7 @@ export default function SimDecisionUI({ sim, decision, map }: SimDecisionUIProps
             setCurrentSectorIndex(-1);
             // Append overall view layout persistently.
             map.addLayers(lastResult.mapInstructions);
-            
+
             // Return to exactly the original camera position with broll panning
             if (sim.scenario?.cameraTarget) {
                 map.startBroll(
@@ -130,6 +173,13 @@ export default function SimDecisionUI({ sim, decision, map }: SimDecisionUIProps
                 previousScore={prevScore}
                 satisfaction={sim.satisfactionScore}
                 round={sim.currentRound}
+                policyCapital={sim.policyCapital}
+            />
+
+            <ZoneLegend
+                sectorTrusts={sim.sectorStakeholders.reduce((acc, s) => ({ ...acc, [s.sectorId]: s.approval }), {})}
+                activeSectorId={showExplanation && lastResult && currentSectorIndex >= 0 ? lastResult.affectedSectors[currentSectorIndex].sector : undefined}
+                activeSectorDelta={showExplanation && lastResult && currentSectorIndex >= 0 ? lastResult.affectedSectors[currentSectorIndex].trustDelta : undefined}
             />
 
             {/* Side panel / bottom sheet */}
@@ -160,9 +210,80 @@ export default function SimDecisionUI({ sim, decision, map }: SimDecisionUIProps
                             hints={sim.scenario?.hints ?? []}
                             onHintUsed={handleHintUsed}
                         />
+
+                        {rejection && rejection.status === "rejected" && (
+                            <div className="w-full max-w-sm mx-auto sm:max-w-md bg-orange-500/10 border border-orange-500/20 rounded-xl p-4 mb-2 animate-in fade-in slide-in-from-bottom-2">
+                                <div className="flex items-start gap-3">
+                                    <AlertCircle className="h-5 w-5 text-orange-600 shrink-0 mt-0.5" />
+                                    <div className="space-y-1">
+                                        <p className="text-sm font-medium text-orange-700 dark:text-orange-500">Decision Rejected</p>
+                                        <p className="text-sm text-foreground/80 leading-snug">{rejection.justification}</p>
+                                        {rejection.hint && (
+                                            <p className="text-sm text-muted-foreground mt-2 italic flex gap-1.5 items-start">
+                                                <span className="font-semibold text-orange-600/80 not-italic shrink-0">Hint:</span>
+                                                {rejection.hint}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {rejection && rejection.status === "needs_more_info" && (
+                            <div className="w-full max-w-sm mx-auto sm:max-w-md bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 mb-2 animate-in fade-in slide-in-from-bottom-2">
+                                <div className="flex items-start gap-3">
+                                    <Info className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
+                                    <div className="space-y-1">
+                                        <p className="text-sm font-medium text-blue-700 dark:text-blue-500">Needs More Detail</p>
+                                        <p className="text-sm text-foreground/80 leading-snug">{rejection.justification}</p>
+                                        {rejection.hint && (
+                                            <p className="text-sm text-blue-800/80 dark:text-blue-200/80 mt-2 font-medium flex gap-1.5 items-start">
+                                                {rejection.hint}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {pendingBudgetDecision && (
+                            <div className="w-full max-w-sm mx-auto sm:max-w-md bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 mb-2 animate-in fade-in slide-in-from-bottom-2">
+                                <div className="flex flex-col gap-3">
+                                    <div className="flex items-start gap-3">
+                                        <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                                        <div className="space-y-1">
+                                            <p className="text-sm font-medium text-amber-700 dark:text-amber-500">Over Budget!</p>
+                                            <p className="text-sm text-foreground/80 leading-snug">
+                                                This decision requires <span className="font-semibold text-amber-600">{pendingBudgetDecision.cost} Policy Capital</span>, but you only have <span className="font-semibold">{sim.policyCapital}</span> left.
+                                            </p>
+                                            <p className="text-xs text-muted-foreground mt-1">
+                                                You can override this, but a negative balance may reduce community satisfaction.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-2 justify-end mt-1">
+                                        <button
+                                            onClick={() => setPendingBudgetDecision(null)}
+                                            className="px-3 py-1.5 text-xs font-semibold rounded-lg text-foreground hover:bg-muted transition-colors border border-border"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            onClick={() => handleDecisionSubmit(pendingBudgetDecision.text, true)}
+                                            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-500 text-white hover:bg-amber-600 transition-colors shadow-sm"
+                                        >
+                                            Submit Anyway
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         <DecisionInput
                             onSubmit={handleDecisionSubmit}
-                            isSubmitting={decision.isSubmitting || sim.isLoading}
+                            isSubmitting={decision.isSubmitting || sim.isLoading || isEvaluating}
+                            inputMode={inputMode}
+                            onInputModeChange={setInputMode}
                         />
                         {sim.currentRound >= 2 && (
                             <button

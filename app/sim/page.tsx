@@ -15,8 +15,7 @@ import ScenarioPanel from "@/components/sim/ScenarioPanel";
 import SimDecisionUI from "./SimDecisionUI";
 import DeckGLOverlay from "@/components/map/DeckGLOverlay";
 import ZoneLegend from "@/components/sim/ZoneLegend";
-import TrafficControls from "@/components/traffic/TrafficControls";
-import TrafficLegend from "@/components/traffic/TrafficLegend";
+
 import { Loader2, Play } from "lucide-react";
 
 
@@ -121,8 +120,14 @@ export default function SimPage() {
                 sim.location,
                 sim.selectedHeadline,
                 sim.currentScore,
+                sim.satisfactionScore,
                 sim.decisions,
-                "Anonymous"
+                "Anonymous",
+                sim.policyCapitalHistory,
+                sim.sectorStakeholders,
+                sim.predictionRanking,
+                sim.predictionRisk,
+                sim.predictionEvaluation!
             )
             .then((slug) => {
                 if (slug) {
@@ -151,15 +156,6 @@ export default function SimPage() {
                 />
             </div>
 
-            {/* Traffic controls + legend */}
-            <TrafficControls
-                state={map.traffic.state}
-                zoom={Math.round(map.mapRef.current?.getZoom() ?? 0)}
-                onConfigChange={map.traffic.updateConfig}
-                onToggle={map.traffic.toggle}
-            />
-            <TrafficLegend config={map.traffic.state.config} />
-
             {/* Resume B-Roll Button */}
             {map.isBrollPaused && sim.step !== "complete" && (
                 <div className="absolute bottom-6 left-1/2 -translate-x-1/2 pointer-events-auto z-[1000] animate-in slide-in-from-bottom-4 fade-in duration-300">
@@ -173,8 +169,6 @@ export default function SimPage() {
                 </div>
             )}
 
-            {/* Zone legend (visible during decision) */}
-            {sim.step === "decision" && <ZoneLegend />}
 
             {/* UI overlays */}
             <div className="absolute inset-0 pointer-events-none pt-14 p-4 flex flex-col">
@@ -205,7 +199,28 @@ export default function SimPage() {
                 {/* Scenario briefing */}
                 {sim.step === "scenario" && sim.scenario && (
                     <div className="pointer-events-auto mt-auto sm:mt-0 sm:ml-auto sm:mr-4 sm:self-end">
-                        <ScenarioPanel context={sim.scenario.context} onReady={handleScenarioReady} />
+                        <ScenarioPanel
+                            context={sim.scenario.context}
+                            availableSectors={sim.sectorStakeholders.map(s => s.sectorId)}
+                            onComplete={(ranking, risk) => {
+                                sim.setPredictions(ranking, risk);
+                                handleScenarioReady();
+
+                                // Background fetch for evaluation
+                                fetch("/api/evaluate-prediction", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({
+                                        scenarioContext: sim.scenario?.context,
+                                        predictedSectors: ranking,
+                                        predictedRisk: risk,
+                                    }),
+                                }).then(res => res.json())
+                                    .then(evaluation => {
+                                        sim.setPredictionEvaluation(evaluation);
+                                    }).catch(console.error);
+                            }}
+                        />
                     </div>
                 )}
 
@@ -220,24 +235,73 @@ export default function SimPage() {
 
                 {/* Complete — loading report */}
                 {sim.step === "complete" && (
-                    <div className="pointer-events-auto fixed inset-0 z-[5000] flex flex-col items-center justify-center gap-6 bg-background/80 backdrop-blur-md animate-in fade-in duration-500">
-                        <div className="relative flex items-center justify-center h-24 w-24">
-                            <div className="absolute inset-0 rounded-full border-[3px] border-primary/20" />
-                            <div className="absolute inset-0 rounded-full border-[3px] border-primary border-t-transparent animate-spin" />
-                            <div className="absolute inset-3 rounded-full border-[3px] border-accent/20" />
-                            <div className="absolute inset-3 rounded-full border-[3px] border-accent border-b-transparent animate-[spin_1.5s_linear_infinite_reverse]" />
-                            <div className="absolute inset-6 rounded-full border-[3px] border-emerald-500/20" />
-                            <div className="absolute inset-6 rounded-full border-[3px] border-emerald-500 border-l-transparent animate-[spin_2s_linear_infinite]" />
-                        </div>
-                        <div className="flex flex-col items-center gap-2 text-center px-4">
-                            <h2 className="text-2xl font-bold text-foreground tracking-tight">
-                                {sim.isFailed ? "Simulation Failed" : "Simulation Complete"}
-                            </h2>
-                            <p className="text-base text-muted-foreground max-w-sm">
-                                {sim.isFailed
-                                    ? "Community trust collapsed. Compiling your failure analysis..."
-                                    : "Finalizing data and generating your comprehensive report..."}
-                            </p>
+                    <div className="pointer-events-auto fixed inset-0 z-[5000] flex flex-col items-center justify-center bg-background/95 backdrop-blur-md animate-in fade-in duration-500 overflow-y-auto p-4">
+                        <div className="max-w-2xl w-full bg-card border border-border rounded-2xl p-6 sm:p-8 shadow-2xl flex flex-col gap-6 mt-16 sm:mt-0">
+                            <div className="flex flex-col items-center text-center gap-2">
+                                <h2 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
+                                    {sim.isFailed ? "Simulation Failed" : "Simulation Complete"}
+                                </h2>
+                                <p className="text-base text-muted-foreground">
+                                    Compiling your final report... Here is a look back at your initial predictions.
+                                </p>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                                <div className="flex flex-col gap-3 bg-muted/40 p-4 rounded-xl border border-border/50">
+                                    <h3 className="text-xs font-semibold uppercase tracking-wider text-primary">Your Predictions</h3>
+                                    <div className="flex flex-col gap-3">
+                                        {sim.predictionRanking?.length ? sim.predictionRanking.map((sector, i) => (
+                                            <div key={sector} className="flex items-center gap-3">
+                                                <span className="w-7 h-7 shrink-0 rounded-full bg-primary/10 border border-primary/20 text-primary flex items-center justify-center text-xs font-bold">{i + 1}</span>
+                                                <span className="text-sm font-semibold">{sector}</span>
+                                            </div>
+                                        )) : (
+                                            <span className="text-sm text-muted-foreground italic">No predictions made.</span>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="flex flex-col gap-3 bg-muted/40 p-4 rounded-xl border border-border/50">
+                                    <h3 className="text-xs font-semibold uppercase tracking-wider text-accent">Actual Impact (Freq)</h3>
+                                    <div className="flex flex-col gap-3">
+                                        {(() => {
+                                            const actualImpacts = sim.decisions?.flatMap(d => d.affectedSectors.map(s => s.sector)) || [];
+                                            const impactCounts = actualImpacts.reduce((acc, sector) => {
+                                                acc[sector] = (acc[sector] || 0) + 1;
+                                                return acc;
+                                            }, {} as Record<string, number>);
+                                            const actualTop3 = Object.entries(impactCounts)
+                                                .sort((a, b) => b[1] - a[1])
+                                                .slice(0, 3)
+                                                .map(e => e[0]);
+
+                                            return actualTop3.length > 0 ? actualTop3.map((sector, i) => {
+                                                const wasPredicted = sim.predictionRanking?.includes(sector);
+                                                return (
+                                                    <div key={sector} className="flex items-center gap-3">
+                                                        <span className="w-7 h-7 shrink-0 rounded-full bg-accent/10 border border-accent/20 text-accent flex items-center justify-center text-xs font-bold">{i + 1}</span>
+                                                        <span className="text-sm font-semibold">{sector}</span>
+                                                        {wasPredicted && <span className="ml-auto text-[10px] bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 px-2 py-0.5 rounded-full font-bold uppercase tracking-wide">Predicted</span>}
+                                                    </div>
+                                                );
+                                            }) : (
+                                                <span className="text-sm text-muted-foreground italic">No impact recorded.</span>
+                                            );
+                                        })()}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {sim.predictionRisk && (
+                                <div className="flex flex-col gap-2 bg-muted/40 p-4 rounded-xl border border-border/50">
+                                    <h3 className="text-xs font-semibold uppercase tracking-wider text-foreground/70">Your Predicted Risk</h3>
+                                    <p className="text-sm font-medium italic text-foreground/90">"{sim.predictionRisk}"</p>
+                                </div>
+                            )}
+
+                            <div className="flex justify-center items-center gap-3 mt-2 py-4 border-t border-border/50">
+                                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                                <span className="text-sm font-semibold text-muted-foreground animate-pulse">Generating comprehensive report...</span>
+                            </div>
                         </div>
                     </div>
                 )}

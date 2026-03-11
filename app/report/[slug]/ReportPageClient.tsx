@@ -2,15 +2,16 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { MapPin, Award, RefreshCw, ArrowRight, AlertTriangle } from "lucide-react";
+import { MapPin, Award, RefreshCw, ArrowRight, AlertTriangle, Users, Target, Activity, CheckCircle2, Coins } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import DecisionTreeView from "@/components/report/DecisionTreeView";
 import ShareCard from "@/components/report/ShareCard";
 import NameInput from "@/components/report/NameInput";
-import type { ReportSession } from "@/types";
+import type { ReportSession, PeerReport } from "@/types";
 
 interface ReportPageClientProps {
     report: ReportSession;
+    peerReports?: PeerReport[];
 }
 
 
@@ -20,7 +21,7 @@ function getScoreColor(score: number): string {
     return "text-teal";
 }
 
-export default function ReportPageClient({ report: initial }: ReportPageClientProps) {
+export default function ReportPageClient({ report: initial, peerReports = [] }: ReportPageClientProps) {
     const [report, setReport] = useState(initial);
     const [showNameInput, setShowNameInput] = useState(!report.userName);
 
@@ -90,6 +91,272 @@ export default function ReportPageClient({ report: initial }: ReportPageClientPr
                         isFailed={isFailed}
                     />
                 </section>
+
+                {/* Policy Capital History */}
+                {report.policyCapitalHistory && report.policyCapitalHistory.length > 0 && (
+                    <section className="flex flex-col gap-3">
+                        <div className="flex items-center gap-2 mb-1">
+                            <Coins className="h-5 w-5 text-amber-500" />
+                            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                                Policy Capital Usage
+                            </h2>
+                        </div>
+                        <div className="bg-card rounded-2xl border border-border p-5 shadow-sm">
+                            <div className="flex items-end justify-between h-32 gap-2 mt-4 px-2">
+                                {report.policyCapitalHistory.map((history, i) => {
+                                    // Handle negative capital visually
+                                    const isNegative = history.ending < 0;
+                                    const positiveEndingHeight = isNegative ? 0 : Math.min(100, history.ending);
+                                    const costHeight = Math.min(100, history.roundCost);
+                                    const negativeHeight = isNegative ? Math.min(100, Math.abs(history.ending)) : 0;
+
+                                    return (
+                                        <div key={i} className="flex-1 flex flex-col items-center justify-end h-[120%] group relative">
+                                            <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition-opacity bg-foreground text-background text-[10px] font-bold px-2 py-1 rounded shadow-sm whitespace-nowrap z-10 pointer-events-none text-center">
+                                                Round {i + 1}<br />Cost: {history.roundCost}
+                                            </div>
+
+                                            <div className="w-full max-w-[40px] flex flex-col justify-end items-center h-full relative">
+                                                {/* Zero line reference */}
+                                                <div className="absolute w-[120%] h-px bg-border bottom-0 -z-10" />
+
+                                                {/* Cost bar (Deducted this round) */}
+                                                {costHeight > 0 && (
+                                                    <div
+                                                        className="w-full bg-red-400/20 border-x border-t border-red-500/30 rounded-t-sm animate-in fade-in slide-in-from-bottom"
+                                                        style={{ height: `${costHeight}%`, marginBottom: isNegative ? '0' : '2px' }}
+                                                    />
+                                                )}
+
+                                                {/* Remaining Positive Capital */}
+                                                {positiveEndingHeight > 0 && (
+                                                    <div
+                                                        className="w-full bg-amber-500 rounded-sm rounded-t-none transition-all duration-500"
+                                                        style={{ height: `${positiveEndingHeight}%` }}
+                                                    />
+                                                )}
+
+                                                {/* Negative Capital (Debt) - drawn below the 0 line */}
+                                                {isNegative && (
+                                                    <div
+                                                        className="w-full bg-red-500/50 rounded-b-sm rounded-t-none transition-all duration-500 mt-0.5 border-x border-b border-red-500/80"
+                                                        style={{ height: `${negativeHeight}%`, position: 'absolute', top: '100%' }}
+                                                    />
+                                                )}
+                                            </div>
+
+                                            <span className={`text-xs font-semibold mt-2 ${isNegative ? 'mb-4' : ''} text-muted-foreground`}>R{i + 1}</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            <div className="mt-8 flex items-center justify-between text-xs text-muted-foreground border-t border-border/50 pt-3">
+                                <span>Starting: <span className="font-bold text-foreground">100</span></span>
+                                <span>Ending: <span className={`font-bold ${report.policyCapitalHistory[report.policyCapitalHistory.length - 1].ending < 0 ? 'text-red-500' : 'text-foreground'}`}>{report.policyCapitalHistory[report.policyCapitalHistory.length - 1].ending}</span></span>
+                            </div>
+                        </div>
+                    </section>
+                )}
+
+                {/* Predictions vs Reality */}
+                {report.predictionRanking && report.predictionRanking.length > 0 && (
+                    <section className="flex flex-col gap-4">
+                        <div className="flex items-center gap-2 mb-1">
+                            <Target className="h-5 w-5 text-accent" />
+                            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                                Your Predictions vs Reality
+                            </h2>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="flex flex-col gap-3 bg-card p-5 rounded-2xl border border-border shadow-sm">
+                                <h3 className="text-xs font-semibold uppercase tracking-wider text-primary">Your Predicted Top 3</h3>
+                                <div className="flex flex-col gap-2">
+                                    {report.predictionRanking.map((sector, i) => (
+                                        <div key={sector} className="flex items-center gap-3 bg-muted/30 p-2 rounded-lg border border-border/50">
+                                            <span className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold shrink-0">{i + 1}</span>
+                                            <span className="text-sm font-medium">{sector}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                                {report.predictionRisk && (
+                                    <div className="mt-2 pt-3 border-t border-border/50">
+                                        <h4 className="text-[10px] font-semibold uppercase text-muted-foreground mb-1">Predicted Risk</h4>
+                                        <p className="text-sm italic text-foreground/80 leading-snug">{report.predictionRisk}</p>
+                                    </div>
+                                )}
+
+                            </div>
+                            <div className="flex flex-col gap-3 bg-card p-5 rounded-2xl border border-border shadow-sm">
+                                <h3 className="text-xs font-semibold uppercase tracking-wider text-accent">Actual Impact</h3>
+                                <div className="flex flex-col gap-3">
+                                    {report.predictionEvaluation?.actualTop3 ? (
+                                        report.predictionEvaluation.actualTop3.map(({ sector, explanation }, i) => {
+                                            const wasPredicted = report.predictionRanking?.includes(sector);
+                                            return (
+                                                <div key={sector} className="flex flex-col gap-2 bg-muted/30 p-3 rounded-lg border border-border/50">
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="w-6 h-6 rounded-full bg-accent/20 text-accent flex items-center justify-center text-[10px] font-bold shrink-0">{i + 1}</span>
+                                                        <span className="text-sm font-semibold">{sector}</span>
+                                                        {wasPredicted && (
+                                                            <span className="ml-auto text-[9px] bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded-full font-bold flex items-center gap-1 uppercase tracking-wider">
+                                                                <CheckCircle2 className="h-2.5 w-2.5" /> Matched
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed italic">
+                                                        {explanation}
+                                                    </p>
+                                                </div>
+                                            )
+                                        })
+                                    ) : (
+                                        <span className="text-sm text-muted-foreground italic py-2">No evaluation data available.</span>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                        {report.predictionEvaluation && (
+                            <div className="bg-card p-5 rounded-2xl border border-border shadow-sm flex flex-col gap-3">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Evaluation Score</h3>
+                                    <span className={`text-xl font-black ${report.predictionEvaluation.score >= 70 ? "text-emerald-500" : report.predictionEvaluation.score >= 40 ? "text-amber-500" : "text-red-500"}`}>{report.predictionEvaluation.score}/100</span>
+                                </div>
+                                <p className="text-sm italic text-foreground/80 leading-relaxed">{report.predictionEvaluation.feedback}</p>
+                            </div>
+                        )}
+                    </section>
+                )}
+
+                {/* Impacted Sectors Detail */}
+                {report.sectorStakeholders && report.sectorStakeholders.length > 0 && (
+                    <section className="flex flex-col gap-4">
+                        <div className="flex items-center gap-2 mb-1">
+                            <Users className="h-5 w-5 text-primary" />
+                            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                                Detailed Sector Analysis
+                            </h2>
+                        </div>
+                        <div className="grid grid-cols-1 gap-3">
+                            {report.sectorStakeholders.sort((a, b) => b.approval - a.approval).map(s => (
+                                <div key={s.sectorId} className="flex flex-col bg-card rounded-2xl border border-border p-5 shadow-sm gap-4 transition-all hover:border-primary/30">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-3xl shrink-0">{s.avatarEmoji}</span>
+                                            <div className="flex flex-col min-w-0">
+                                                <span className="text-lg font-bold leading-tight uppercase tracking-tight text-foreground">{s.sectorId}</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col items-end gap-1">
+                                            <div className="flex items-center gap-2">
+                                                {(() => {
+                                                    const initial = s.initialApproval ?? 50;
+                                                    const delta = Math.round(s.approval - initial);
+                                                    if (delta === 0) return null;
+                                                    return (
+                                                        <span className={`text-xs font-bold ${delta > 0 ? "text-emerald-500" : "text-red-500"}`}>
+                                                            {delta > 0 ? "+" : ""}{delta}%
+                                                        </span>
+                                                    );
+                                                })()}
+                                                <span className={`text-xl font-mono font-black ${s.approval < 30 ? "text-red-500" : s.approval > 70 ? "text-emerald-500" : "text-primary"}`}>
+                                                    {s.approval}%
+                                                </span>
+                                            </div>
+                                            <span className="text-[10px] text-muted-foreground font-bold uppercase">Sector Trust</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                                        <div
+                                            className={`h-full transition-all duration-1000 ${s.approval < 30 ? "bg-red-500" : s.approval > 70 ? "bg-emerald-500" : "bg-primary"}`}
+                                            style={{ width: `${s.approval}%` }}
+                                        />
+                                    </div>
+
+                                    {s.quotes && s.quotes.length > 0 ? (
+                                        <div className="flex flex-col gap-2 mt-2">
+                                            <h4 className="text-[9px] font-bold uppercase text-muted-foreground ml-1">Overall Impact</h4>
+                                            <div className="bg-muted/40 p-3 rounded-xl border border-border/50 relative">
+                                                <p className="text-xs italic leading-relaxed text-foreground/90">
+                                                    {s.quotes[s.quotes.length - 1]}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ) : (s as any).lastQuote ? (
+                                        <div className="flex flex-col gap-2 mt-2">
+                                            <h4 className="text-[9px] font-bold uppercase text-muted-foreground ml-1">Overall Impact</h4>
+                                            <div className="bg-muted/40 p-3 rounded-xl border border-border/50 relative">
+                                                <p className="text-xs italic leading-relaxed text-foreground/90">
+                                                    {(s as any).lastQuote}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ) : null}
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                )}
+
+                {/* Peer Comparison */}
+                {peerReports && peerReports.length > 0 && (
+                    <section className="flex flex-col gap-4">
+                        <div className="flex items-center gap-2 mb-1">
+                            <Activity className="h-5 w-5 text-teal-500" />
+                            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                                How Others Decided
+                            </h2>
+                        </div>
+                        <div className="bg-card rounded-2xl border border-border p-5 shadow-sm">
+                            <p className="text-sm text-foreground mb-4">You and {peerReports.length} others faced this exact scenario. Here is how your scores compare.</p>
+
+                            {/* Simple SVG Scatter Plot */}
+                            <div className="w-full aspect-[2/1] bg-muted/20 border-l border-b border-border relative mt-4 rounded-tr-lg rounded-br-none pb-2 pr-2">
+                                {/* Axis labels */}
+                                <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Overall Score</div>
+                                <div className="absolute -left-6 top-1/2 -translate-y-1/2 -rotate-90 text-[10px] text-muted-foreground uppercase font-bold tracking-wider origin-center whitespace-nowrap">Satisfaction</div>
+
+                                {/* Grid lines */}
+                                <div className="absolute inset-0 grid grid-cols-4 grid-rows-4 pointer-events-none">
+                                    {Array.from({ length: 16 }).map((_, i) => (
+                                        <div key={i} className="border-r border-t border-border/30 border-dashed" />
+                                    ))}
+                                </div>
+
+                                {/* Peer Dots */}
+                                {peerReports.map((p, i) => (
+                                    <div
+                                        key={i}
+                                        className="absolute w-3 h-3 rounded-full bg-muted-foreground/40 border border-background -ml-1.5 -mb-1.5 peer-dot group transition-transform hover:scale-150 hover:bg-muted-foreground hover:z-10"
+                                        style={{ left: `${Math.max(5, Math.min(95, p.final_score))}%`, bottom: `${Math.max(5, Math.min(95, p.final_satisfaction))}%` }}
+                                        title={`Peer: Score ${p.final_score}%, Satisfaction ${p.final_satisfaction}%, ${p.decision_count} decisions`}
+                                    />
+                                ))}
+
+                                {/* User Dot */}
+                                <div
+                                    className="absolute w-4 h-4 rounded-full bg-primary border-2 border-background shadow-[0_0_10px_rgba(20,184,166,0.6)] -ml-2 -mb-2 z-20 transition-transform hover:scale-125"
+                                    style={{ left: `${Math.max(5, Math.min(95, report.finalScore))}%`, bottom: `${Math.max(5, Math.min(95, report.decisions[report.decisions.length - 1]?.newSatisfaction ?? 50))}%` }}
+                                >
+                                    <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-foreground text-background text-[10px] font-bold px-2 py-0.5 rounded shadow-sm whitespace-nowrap">
+                                        You ({report.finalScore}%)
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-8 flex flex-col gap-2">
+                                <h4 className="text-xs font-semibold uppercase text-muted-foreground">Peer Decision Approaches</h4>
+                                <ul className="text-xs text-foreground/80 space-y-2 list-disc list-inside">
+                                    {peerReports.slice(0, 3).map((p, i) => (
+                                        <li key={i} className="leading-relaxed">
+                                            A peer who scored <span className="font-semibold text-foreground">{p.final_score}%</span> made {p.decision_count} decisions, starting with: <span className="italic">"{p.decisions_summary[0]}..."</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+                    </section>
+                )}
 
                 {/* Share card */}
                 <section className="flex flex-col gap-3">

@@ -14,8 +14,14 @@ interface UseReportReturn {
         location: Location,
         headline: ClimateHeadline,
         finalScore: number,
+        finalSatisfaction: number,
         decisions: DecisionResult[],
-        userName: string
+        userName: string,
+        policyCapitalHistory: any[],
+        sectorStakeholders: any[],
+        predictionRanking: string[],
+        predictionRisk: string,
+        predictionEvaluation: any
     ) => Promise<string | null>;
     fetchReport: (slug: string) => Promise<ReportSession | null>;
     isGenerating: boolean;
@@ -31,8 +37,14 @@ export function useReport(): UseReportReturn {
             location: Location,
             headline: ClimateHeadline,
             finalScore: number,
+            finalSatisfaction: number,
             decisions: DecisionResult[],
-            userName: string
+            userName: string,
+            policyCapitalHistory: any[],
+            sectorStakeholders: any[],
+            predictionRanking: string[],
+            predictionRisk: string,
+            predictionEvaluation: any
         ): Promise<string | null> => {
             setIsGenerating(true);
             setError(null);
@@ -45,8 +57,14 @@ export function useReport(): UseReportReturn {
                         location,
                         headline,
                         finalScore,
+                        finalSatisfaction,
                         decisions,
                         userName,
+                        policyCapitalHistory,
+                        sectorStakeholders,
+                        predictionRanking,
+                        predictionRisk,
+                        predictionEvaluation
                     }),
                 });
 
@@ -88,6 +106,11 @@ export function useReport(): UseReportReturn {
                     decisions: data.decisions as DecisionResult[],
                     verdict: data.verdict ?? "",
                     createdAt: data.created_at,
+                    policyCapitalHistory: data.policy_capital_history,
+                    sectorStakeholders: data.sector_stakeholders,
+                    predictionRanking: data.prediction_ranking,
+                    predictionRisk: data.prediction_risk,
+                    predictionEvaluation: data.prediction_evaluation,
                 } as ReportSession;
             } catch {
                 return null;
