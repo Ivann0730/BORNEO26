@@ -38,7 +38,10 @@ export default function ScoreIndicator({
                     {/* Ecology */}
                     <div className="flex-1 flex flex-col gap-1.5">
                         <div className="flex items-center justify-between text-green-500 text-xs font-bold leading-none">
-                            <span className="text-[10px] tracking-wider uppercase opacity-80 hidden md:block">Ecology</span>
+                            <div className="hidden md:flex flex-col">
+                                <span className="text-[10px] tracking-wider uppercase opacity-80">Ecology</span>
+                                <span className="text-[8px] tracking-wide opacity-50 normal-case">Environmental Health</span>
+                            </div>
                             <div className="flex items-center gap-1 w-full justify-end md:w-auto">
                                 <Leaf className="h-3.5 w-3.5" />
                                 <span>{ecology}%</span>
@@ -53,7 +56,10 @@ export default function ScoreIndicator({
                     {/* Economy */}
                     <div className="flex-1 flex flex-col gap-1.5">
                         <div className="flex items-center justify-between text-blue-500 text-xs font-bold leading-none">
-                            <span className="text-[10px] tracking-wider uppercase opacity-80 hidden md:block">Economy</span>
+                            <div className="hidden md:flex flex-col">
+                                <span className="text-[10px] tracking-wider uppercase opacity-80">Economy</span>
+                                <span className="text-[8px] tracking-wide opacity-50 normal-case">City Fiscal Health</span>
+                            </div>
                             <div className="flex items-center gap-1 w-full justify-end md:w-auto">
                                 <Briefcase className="h-3.5 w-3.5" />
                                 <span>{economy}%</span>
@@ -68,7 +74,10 @@ export default function ScoreIndicator({
                     {/* Society */}
                     <div className="flex-1 flex flex-col gap-1.5">
                         <div className="flex items-center justify-between text-red-500 text-xs font-bold leading-none">
-                            <span className="text-[10px] tracking-wider uppercase opacity-80 hidden md:block">Society</span>
+                            <div className="hidden md:flex flex-col">
+                                <span className="text-[10px] tracking-wider uppercase opacity-80">Society</span>
+                                <span className="text-[8px] tracking-wide opacity-50 normal-case">Public Trust</span>
+                            </div>
                             <div className="flex items-center gap-1 w-full justify-end md:w-auto">
                                 <Users className="h-3.5 w-3.5" />
                                 <span>{society}%</span>

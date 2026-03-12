@@ -41,12 +41,14 @@ export interface Scenario {
   initialSociety: number; // Represents average starting public trust
   hints: string[];
   cameraTarget: CameraTarget;
+  /** Available zone IDs from the zone registry for this location */
+  availableZoneIds?: string[];
 }
 
 /* ─────────────────── Map Instruction ─────────────────────── */
 export interface MapInstruction {
   type: "add_layer" | "remove_layer" | "fly_to" | "animate_camera";
-  layerType?: "heatmap" | "polygon" | "point" | "arc" | "icon";
+  layerType?: "heatmap" | "polygon" | "point" | "arc" | "icon" | "particles";
   layerId?: string;
   geoJson?: GeoJSON.Feature | GeoJSON.FeatureCollection;
   color?: string;
@@ -57,6 +59,7 @@ export interface MapInstruction {
   bearing?: number;
   pitch?: number;
   durationMs?: number;
+  delta?: number;
 }
 
 /* ─────────────────── Climate Term ────────────────────────── */
@@ -81,6 +84,8 @@ export interface AffectedSector {
   sector: "Residential" | "Commercial" | "Industrial" | "Institutional" | "Business District" | "Mixed Use" | "Open Space";
   explanation: string;
   trustDelta: number;
+  /** Zone IDs from the zone registry that this sector impact applies to */
+  zoneIds?: string[];
   cameraTarget?: CameraTarget;
   mapInstructions: MapInstruction[];
 }
@@ -138,6 +143,7 @@ export interface ReportSession {
   finalSociety: number;
   decisions: DecisionResult[];
   verdict: string;
+  postMortem?: string;
   createdAt: string;
   sectorStakeholders?: SectorStakeholder[];
   predictionRanking?: string[];

@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { nanoid } from "nanoid";
 import { reportBodySchema } from "@/lib/validations/api";
 import { buildVerdictPrompt } from "@/lib/gemini/prompts";
-import { getGeminiText } from "@/lib/gemini/parser";
+import { parseGeminiJson } from "@/lib/gemini/parser";
+import { verdictSchema } from "@/lib/gemini/schemas";
 import { supabaseServer } from "@/lib/supabase/server";
 import type { DecisionResult } from "@/types";
 
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
 
         const slug = nanoid(8);
 
-        const verdict = await getGeminiText(
+        const verdictResult = await parseGeminiJson(
             buildVerdictPrompt(
                 { name: headline.locationTag, lat: 0, lng: 0, country: "", region: "" }, // Mock Location object, buildVerdictPrompt only uses name
                 headline,
@@ -31,8 +32,12 @@ export async function POST(request: NextRequest) {
                 finalEconomy,
                 finalSociety,
                 decisions as DecisionResult[]
-            )
+            ),
+            verdictSchema
         );
+
+        // Stringify the guaranteed JSON object for Supabase
+        const verdict = JSON.stringify(verdictResult);
 
         const decisionCount = decisions.length;
         const decisionsSummary = (decisions as any[]).map((d: any) =>

@@ -84,6 +84,7 @@ const affectedSectorSchema = z.object({
     ]),
     explanation: z.string(),
     trustDelta: z.number().int().min(-20).max(20),
+    zoneIds: z.array(z.string()).optional(),
     cameraTarget: cameraTargetSchema.optional(),
     mapInstructions: z.array(mapInstructionSchema),
 });
@@ -144,9 +145,18 @@ export const evaluatePredictionSchema = z.object({
     actualTop3: z.array(z.object({
         sector: z.string(),
         explanation: z.string()
-    })).min(1).max(3),
-    score: z.number().int().min(0).max(100),
+    })),
+    score: z.number(),
     feedback: z.string(),
 });
 
-export type EvaluatePredictionResponse = z.infer<typeof evaluatePredictionSchema>;
+export type EvaluatePredictionResult = z.infer<typeof evaluatePredictionSchema>;
+
+/* ────────── Report Verdict ────────── */
+
+export const verdictSchema = z.object({
+    verdict: z.string().describe("A 1-2 sentence overall summary of the player's performance."),
+    postMortem: z.string().describe("A short reflection on what the player could have done differently to achieve a better outcome (max 3 sentences)."),
+});
+
+export type VerdictResult = z.infer<typeof verdictSchema>;

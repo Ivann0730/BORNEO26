@@ -45,8 +45,11 @@ export default function SimDecisionUI({ sim, decision, map }: SimDecisionUIProps
 
             if (result.affectedSectors && result.affectedSectors.length > 0) {
                 setCurrentSectorIndex(0);
+                // Show first sector's layers
                 const firstSector = result.affectedSectors[0];
-                map.addLayers(firstSector.mapInstructions);
+                map.addLayers(firstSector.mapInstructions.filter(i => i.layerType !== 'particles'));
+                map.setParticleInstructions(firstSector.mapInstructions.filter(i => i.layerType === 'particles'));
+
                 if (firstSector.cameraTarget) {
                     map.startBroll(
                         firstSector.cameraTarget.center[0],
@@ -57,7 +60,9 @@ export default function SimDecisionUI({ sim, decision, map }: SimDecisionUIProps
                 }
             } else {
                 setCurrentSectorIndex(-1);
-                map.addLayers(result.mapInstructions);
+                setShowExplanation(true);
+                map.addLayers(result.mapInstructions.filter(i => i.layerType !== 'particles'));
+                map.setParticleInstructions([]);
             }
 
             setShowExplanation(true);
@@ -109,7 +114,8 @@ export default function SimDecisionUI({ sim, decision, map }: SimDecisionUIProps
 
             // Note: we intentionally do NOT clear layers.
             // The sectors will accumulate persistently so the user can see all affected regions side-by-side.
-            map.addLayers(nextSector.mapInstructions);
+            map.addLayers(nextSector.mapInstructions.filter(i => i.layerType !== 'particles'));
+            map.setParticleInstructions(nextSector.mapInstructions.filter(i => i.layerType === 'particles'));
 
             if (nextSector.cameraTarget) {
                 map.startBroll(
@@ -123,7 +129,8 @@ export default function SimDecisionUI({ sim, decision, map }: SimDecisionUIProps
             // All sectors done, show overall
             setCurrentSectorIndex(-1);
             // Append overall view layout persistently.
-            map.addLayers(lastResult.mapInstructions);
+            map.addLayers(lastResult.mapInstructions.filter(i => i.layerType !== 'particles'));
+            map.setParticleInstructions([]);
 
             // Return to exactly the original camera position with broll panning
             if (sim.scenario?.cameraTarget) {
@@ -140,6 +147,7 @@ export default function SimDecisionUI({ sim, decision, map }: SimDecisionUIProps
             setLastResult(null);
             setCurrentSectorIndex(-1);
             // DO NOT clear layers - let the highlighted zones persist into the next round!
+            map.setParticleInstructions([]);
             sim.advanceAfterExplanation();
         }
     }, [sim, lastResult, currentSectorIndex, map]);

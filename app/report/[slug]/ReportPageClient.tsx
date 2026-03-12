@@ -47,6 +47,23 @@ export default function ReportPageClient({ report: initial, peerReports = [] }: 
         ? report.decisions[0].newEcology - report.decisions[0].ecologyDelta
         : report.finalEcology;
 
+    // Handle parsing the verdict, since it might now be stringified JSON {"verdict": "...", "postMortem": "..."}
+    let parsedVerdict = { verdict: report.verdict, postMortem: report.postMortem || "" };
+    if (report.verdict) {
+        let cleanVerdict = report.verdict.replace(/```(?:json)?/g, "").trim();
+        if (cleanVerdict.startsWith("{")) {
+            try {
+                const parsed = JSON.parse(cleanVerdict);
+                parsedVerdict = {
+                    verdict: parsed.verdict || report.verdict,
+                    postMortem: parsed.postMortem || report.postMortem || "",
+                };
+            } catch (e) {
+                console.error("Failed to parse verdict JSON:", e);
+            }
+        }
+    }
+
     return (
         <div className="min-h-screen bg-background">
             <Navbar />
@@ -70,33 +87,45 @@ export default function ReportPageClient({ report: initial, peerReports = [] }: 
                     {/* Scores */}
                     <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 mt-2">
                         {/* Ecology */}
-                        <div className="flex items-center justify-center gap-2">
-                            <Leaf className="h-5 w-5 text-green-500" />
-                            <span className={`text-2xl font-bold ${getEcologyColor(report.finalEcology)}`}>
-                                {report.finalEcology}%
-                            </span>
+                        <div className="flex flex-col items-center gap-1">
+                            <div className="flex items-center gap-2">
+                                <Leaf className="h-5 w-5 text-green-500" />
+                                <span className={`text-2xl font-bold ${getEcologyColor(report.finalEcology)}`}>
+                                    {report.finalEcology}%
+                                </span>
+                            </div>
+                            <span className="text-[10px] text-green-500/70 font-semibold uppercase tracking-wider">Ecology</span>
+                            <span className="text-[9px] text-muted-foreground -mt-0.5">Environmental Health</span>
                         </div>
                         {/* Economy */}
-                        <div className="flex items-center justify-center gap-2">
-                            {report.finalEconomy <= 10 ? (
-                                <AlertTriangle className="h-5 w-5 text-red-500" />
-                            ) : (
-                                <Briefcase className="h-5 w-5 text-blue-500" />
-                            )}
-                            <span className={`text-2xl font-bold ${getEconomyColor(report.finalEconomy)}`}>
-                                {report.finalEconomy}%
-                            </span>
+                        <div className="flex flex-col items-center gap-1">
+                            <div className="flex items-center gap-2">
+                                {report.finalEconomy <= 10 ? (
+                                    <AlertTriangle className="h-5 w-5 text-red-500" />
+                                ) : (
+                                    <Briefcase className="h-5 w-5 text-blue-500" />
+                                )}
+                                <span className={`text-2xl font-bold ${getEconomyColor(report.finalEconomy)}`}>
+                                    {report.finalEconomy}%
+                                </span>
+                            </div>
+                            <span className="text-[10px] text-blue-500/70 font-semibold uppercase tracking-wider">Economy</span>
+                            <span className="text-[9px] text-muted-foreground -mt-0.5">City Fiscal Health</span>
                         </div>
                         {/* Society */}
-                        <div className="flex items-center justify-center gap-2">
-                            {report.finalSociety <= 15 ? (
-                                <AlertTriangle className="h-5 w-5 text-red-500" />
-                            ) : (
-                                <Users className="h-5 w-5 text-orange-500" />
-                            )}
-                            <span className={`text-2xl font-bold ${getSocietyColor(report.finalSociety)}`}>
-                                {report.finalSociety}%
-                            </span>
+                        <div className="flex flex-col items-center gap-1">
+                            <div className="flex items-center gap-2">
+                                {report.finalSociety <= 15 ? (
+                                    <AlertTriangle className="h-5 w-5 text-red-500" />
+                                ) : (
+                                    <Users className="h-5 w-5 text-orange-500" />
+                                )}
+                                <span className={`text-2xl font-bold ${getSocietyColor(report.finalSociety)}`}>
+                                    {report.finalSociety}%
+                                </span>
+                            </div>
+                            <span className="text-[10px] text-orange-500/70 font-semibold uppercase tracking-wider">Society</span>
+                            <span className="text-[9px] text-muted-foreground -mt-0.5">Public Trust</span>
                         </div>
                     </div>
 
@@ -106,9 +135,9 @@ export default function ReportPageClient({ report: initial, peerReports = [] }: 
                         </p>
                     )}
 
-                    {report.verdict && (
+                    {parsedVerdict.verdict && (
                         <p className="text-sm text-muted-foreground italic max-w-md mx-auto">
-                            {report.verdict}
+                            {parsedVerdict.verdict}
                         </p>
                     )}
                 </div>
@@ -124,8 +153,24 @@ export default function ReportPageClient({ report: initial, peerReports = [] }: 
                     <DecisionTreeView
                         decisions={report.decisions}
                         initialScore={initialEcology}
+                        initialEconomy={report.decisions.length > 0 ? report.decisions[0].newEconomy - report.decisions[0].economyDelta : report.finalEconomy}
+                        initialSociety={report.decisions.length > 0 ? report.decisions[0].newSociety !== undefined && report.decisions[0].societyDelta !== undefined ? report.decisions[0].newSociety - report.decisions[0].societyDelta : 50 : report.finalSociety}
                         isFailed={isFailed}
+                        sectorStakeholders={report.sectorStakeholders}
                     />
+                    
+                    {parsedVerdict.postMortem && (
+                        <div className="bg-card border border-primary/20 p-5 sm:p-6 rounded-2xl shadow-sm relative overflow-hidden mt-4">
+                            <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+                                <Activity className="w-24 h-24" />
+                            </div>
+                            <h3 className="text-sm font-bold uppercase tracking-wider text-foreground mb-3 flex items-center gap-2">
+                                <Target className="h-4 w-4 text-primary" />
+                                What could you have done differently? (Post-Mortem Reflection)
+                            </h3>
+                            <p className="text-foreground/80 leading-relaxed text-sm">{parsedVerdict.postMortem}</p>
+                        </div>
+                    )}
                 </section>
 
                 {/* Predictions vs Reality */}
@@ -173,7 +218,7 @@ export default function ReportPageClient({ report: initial, peerReports = [] }: 
                                                             </span>
                                                         )}
                                                     </div>
-                                                    <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed italic">
+                                                    <p className="text-[11px] text-muted-foreground leading-relaxed italic">
                                                         {explanation}
                                                     </p>
                                                 </div>
@@ -319,7 +364,7 @@ export default function ReportPageClient({ report: initial, peerReports = [] }: 
                                 <ul className="text-xs text-foreground/80 space-y-2 list-disc list-inside">
                                     {peerReports.slice(0, 3).map((p, i) => (
                                         <li key={i} className="leading-relaxed">
-                                            A peer who scored <span className="font-semibold text-foreground">{p.final_society}%</span> in Society made {p.decision_count} decisions, starting with: <span className="italic">"{p.decisions_summary[0]}..."</span>
+                                            A peer who scored <span className="font-semibold text-foreground">{p.final_society}%</span> in Society made {p.decision_count} decisions, starting with: <span className="italic">{p.decisions_summary[0]}...</span>
                                         </li>
                                     ))}
                                 </ul>

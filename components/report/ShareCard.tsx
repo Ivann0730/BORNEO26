@@ -74,7 +74,9 @@ export default function ShareCard({ report }: ShareCardProps) {
                         {report.headline.title}
                     </p>
                     <p className="text-xs opacity-70 mt-1">
-                        {report.location.name}, {report.location.country}
+                        {typeof report.location === 'string'
+                            ? report.location
+                            : `${report.location?.name || 'Unknown Location'}${report.location?.country ? `, ${report.location.country}` : ''}`}
                     </p>
                 </div>
 
@@ -92,7 +94,10 @@ export default function ShareCard({ report }: ShareCardProps) {
                         <span className="text-xl font-bold">
                             {report.finalEcology}%
                         </span>
-                        <span className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-0.5">Ecology</span>
+                        <div className="flex flex-col ml-0.5">
+                            <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">Ecology</span>
+                            <span className="text-[8px] opacity-40 -mt-0.5">Environmental Health</span>
+                        </div>
                     </div>
                     {/* Economy */}
                     <div className="flex items-center gap-2">
@@ -100,7 +105,10 @@ export default function ShareCard({ report }: ShareCardProps) {
                         <span className="text-xl font-bold">
                             {report.finalEconomy}%
                         </span>
-                        <span className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-0.5">Economy</span>
+                        <div className="flex flex-col ml-0.5">
+                            <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">Economy</span>
+                            <span className="text-[8px] opacity-40 -mt-0.5">City Fiscal Health</span>
+                        </div>
                     </div>
                     {/* Society */}
                     <div className="flex items-center gap-2">
@@ -108,13 +116,29 @@ export default function ShareCard({ report }: ShareCardProps) {
                         <span className="text-xl font-bold">
                             {report.finalSociety}%
                         </span>
-                        <span className="text-[10px] font-bold uppercase tracking-wider opacity-60 ml-0.5">Society</span>
+                        <div className="flex flex-col ml-0.5">
+                            <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">Society</span>
+                            <span className="text-[8px] opacity-40 -mt-0.5">Public Trust</span>
+                        </div>
                     </div>
-                    {report.verdict && (
-                        <p className="text-xs opacity-80 italic mt-3 leading-snug">
-                            {report.verdict}
-                        </p>
-                    )}
+                    {(() => {
+                        let verdictText = report.verdict || "";
+                        if (verdictText) {
+                            let cleanVerdict = verdictText.replace(/```(?:json)?/g, "").trim();
+                            if (cleanVerdict.startsWith("{")) {
+                                try {
+                                    const parsed = JSON.parse(cleanVerdict);
+                                    verdictText = parsed.verdict || verdictText;
+                                } catch { /* use raw */ }
+                            }
+                        }
+                        
+                        return verdictText ? (
+                            <p className="text-xs opacity-80 italic mt-3 leading-snug">
+                                {verdictText}
+                            </p>
+                        ) : null;
+                    })()}
                 </div>
             </div>
 

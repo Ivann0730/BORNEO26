@@ -53,8 +53,13 @@ export function buildDecisionPrompt(
   previousEcology: number,
   previousEconomy: number,
   sectorApprovalsList: string,
-  history: DecisionResult[]
+  history: DecisionResult[],
+  zonesSummary?: string
 ): string {
+  const zonesBlock = zonesSummary
+    ? `\nAVAILABLE ZONES (select from these by ID for affected sectors):\n${zonesSummary}\n`
+    : "";
+
   return `You are a climate policy simulator for Grade 6-10 students in ASEAN.
 
 Scenario: ${scenario.context}
@@ -64,7 +69,7 @@ Current Simulation State:
 - Ecology: ${previousEcology}/100
 - Economy: ${previousEconomy}/100
 - Sector Approvals: ${sectorApprovalsList}
-
+${zonesBlock}
 Decision history: ${JSON.stringify(history.map((h) => h.interpretation))}
 
 The student just said: "${decisionText}"
@@ -73,7 +78,7 @@ Interpret their decision and return ONLY a valid JSON object:
 {
   "round": ${round},
   "userInput": "${decisionText}",
-  "interpretation": "1 sentence describing what you understood their decision to be",
+  "interpretation": "1 sentence describing the decision in second person, addressing the student directly (e.g. 'You decided to...' or 'You proposed...'). Never use third person like 'The student'.",
   "justification": "1-2 sentences explaining why this decision impacts the city the way it does.",
   "ecologyDelta": (integer between -30 and +30. Environmental impact),
   "newEcology": (previousEcology + ecologyDelta, clamped 0-100),
@@ -84,48 +89,23 @@ Interpret their decision and return ONLY a valid JSON object:
       "sector": "one of: Residential, Commercial, Industrial, Institutional, Business District, Mixed Use, Open Space",
       "explanation": "2-3 sentences explaining how this specific sector is affected.",
       "trustDelta": (integer between -20 and +20 representing change in trust for this specific sector),
+      "zoneIds": ["zone-id-1", "zone-id-2"],
       "cameraTarget": {
         "center": [${scenario.location.lng}, ${scenario.location.lat}],
         "zoom": 17,
         "pitch": 55,
         "bearing": 20
       },
-      "mapInstructions": [
-        {
-          "type": "add_layer",
-          "layerType": "polygon",
-          "layerId": "sector-layer-id",
-          "geoJson": { "type": "Feature", "geometry": {...}, "properties": {...} },
-          "color": "#hexcolor"
-        }
-      ]
+      "mapInstructions": []
     }
   ],
-  "mapInstructions": [
-    {
-      "type": "add_layer",
-      "layerType": "heatmap" | "polygon" | "point" | "arc" | "icon",
-      "layerId": "unique-layer-id",
-      "geoJson": { "type": "Feature", "geometry": {...}, "properties": {...} },
-      "color": "#hexcolor",
-      "intensity": 0.0-1.0,
-      "label": "description"
-    }
-  ],
+  "mapInstructions": [],
   "explanation": "2-3 sentences overall summary at Grade 7-8 reading level. Honest about tradeoffs.",
   "climateTerms": [
     { "term": "term used in explanation", "definition": "simple definition for a 13-year-old" }
   ],
   "alternativeDecision": "1 sentence nudging the student to think about a different direction they could have taken without explicitly giving them the exact answer",
-  "alternativeMapInstructions": [
-    {
-      "type": "add_layer",
-      "layerType": "polygon",
-      "layerId": "alt-layer-id",
-      "geoJson": { "type": "Feature", "geometry": {...}, "properties": {...} },
-      "color": "#hexcolor"
-    }
-  ]
+  "alternativeMapInstructions": []
 }
 
 Rules:
@@ -134,13 +114,10 @@ Rules:
 - Standard, incremental policies should have deltas between +/- 3 to 8.
 - You MUST NOT output a societyDelta. You ONLY output trustDelta for specific sectors.
 - Provide 1-3 affectedSectors showing the specific impact on different city zones.
-- The cameraTarget in affectedSectors should zoom in closely to the affected area.
-- Provide 1-2 mapInstructions in affectedSectors to highlight the area.
-- CRITICAL: For affectedSectors, you MUST use these exact colors for the mapInstructions: Residential (#ef4444), Commercial (#3b82f6), Industrial (#f59e0b), Institutional (#a855f7), Business District (#eab308), Mixed Use (#ec4899), Open Space (#22c55e).
-- Provide 1-2 overall mapInstructions showing the visual effect of the decision for the whole city.
-- All coordinates must be tightly clustered near [${scenario.location.lng}, ${scenario.location.lat}] (within 0.02 degrees).
-- CRITICAL: Ensure coordinates are placed logically. Terrestrial sectors (Residential, Commercial, Industrial, etc.) MUST be placed on land. Do not hallucinate coordinates in the middle of the ocean or water bodies!
-- Only place coordinates on water if the specific sector or issue is explicitly marine-based.
+- CRITICAL: For each affectedSector, you MUST select 1-3 zone IDs from the AVAILABLE ZONES list above. Use the "zoneIds" field. The server will resolve these to real map polygons.
+- If no AVAILABLE ZONES are listed, leave "zoneIds" as an empty array.
+- Set "mapInstructions" to an empty array [] in both affectedSectors and the top-level object. The server will generate map layers from the zone IDs.
+- The cameraTarget in affectedSectors should zoom in closely to the affected area. Use the coordinates from the AVAILABLE ZONES if possible (they represent real locations).
 - Decisions are morally complex: every choice has real tradeoffs across Ecology, Economy, and Society (Sector trust).
 - Do not reward or punish obviously: ambiguous is better.
 - Write at Grade 7-8 reading level, engaging not scary.
@@ -166,10 +143,16 @@ Issue: ${headline.title}
 Final TBL Scores - Ecology: ${finalEcology}/100, Economy: ${finalEconomy}/100, Society: ${finalSociety}/100
 Their decisions: ${decisionSummary}
 
-Write a single sentence verdict (max 20 words) summarizing their performance.
-Be encouraging but honest. Use simple language.
+Write a single sentence verdict (max 20 words) summarizing their performance. Be encouraging but honest. Use simple language.
+Then, write a "post-mortem" reflection (What could you have done differently?). This should be a cohesive, 3-4 sentence paragraph that looks back at their entire decision path and gently suggests a better approach or highlights a critical missed opportunity. Frame it as a post-mortem reflection rather than mid-path second-guessing.
 
-Return ONLY the verdict sentence, no JSON, no quotes, no explanation.`;
+Return ONLY a valid JSON object matching this exact structure:
+{
+  "verdict": "Your 20-word summarized verdict",
+  "postMortem": "Your 3-4 sentence post-mortem paragraph"
+}
+
+Return ONLY JSON, no explanation, no markdown.`;
 }
 
 export function buildLocationResolvePrompt(

@@ -3,6 +3,7 @@ import { analyzeBodySchema } from "@/lib/validations/api";
 import { buildAnalyzePrompt, buildLocationResolvePrompt } from "@/lib/gemini/prompts";
 import { parseGeminiJson } from "@/lib/gemini/parser";
 import { scenarioResponseSchema, locationResolveSchema } from "@/lib/gemini/schemas";
+import { getZonesForLocation } from "@/lib/zones";
 import type { Scenario } from "@/types";
 
 export async function POST(request: NextRequest) {
@@ -39,6 +40,12 @@ export async function POST(request: NextRequest) {
         }
 
         const resolvedLocation = { ...location, lat: resolvedLat, lng: resolvedLng };
+
+        // Pre-fetch zones for this location (predefined or Overpass fallback)
+        const zones = await getZonesForLocation(resolvedLat, resolvedLng);
+        const availableZoneIds = zones.map((z) => z.id);
+        console.log(`[analyze] Fetched ${zones.length} zones for (${resolvedLat}, ${resolvedLng})`);
+
         const prompt = buildAnalyzePrompt(resolvedLocation, headline);
         const result = await parseGeminiJson(prompt, scenarioResponseSchema);
 
@@ -49,6 +56,7 @@ export async function POST(request: NextRequest) {
             initialEcology: 50,
             initialEconomy: 50,
             initialSociety: 50,
+            availableZoneIds,
         } as Scenario;
 
         // Force camera to orbit the exact resolved coordinates rather than LLM hallucinations
@@ -67,3 +75,4 @@ export async function POST(request: NextRequest) {
         );
     }
 }
+
