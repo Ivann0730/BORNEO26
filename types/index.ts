@@ -35,16 +35,20 @@ export interface Scenario {
   headline: ClimateHeadline;
   location: Location;
   context: string;
-  affectedArea: GeoJSON.Feature;
-  initialScore: number;
+  // Initial conditions when the scenario drops
+  initialEcology: number;
+  initialEconomy: number;
+  initialSociety: number; // Represents average starting public trust
   hints: string[];
   cameraTarget: CameraTarget;
+  /** Available zone IDs from the zone registry for this location */
+  availableZoneIds?: string[];
 }
 
 /* ─────────────────── Map Instruction ─────────────────────── */
 export interface MapInstruction {
   type: "add_layer" | "remove_layer" | "fly_to" | "animate_camera";
-  layerType?: "heatmap" | "polygon" | "point" | "arc" | "icon";
+  layerType?: "heatmap" | "polygon" | "point" | "arc" | "icon" | "particles";
   layerId?: string;
   geoJson?: GeoJSON.Feature | GeoJSON.FeatureCollection;
   color?: string;
@@ -55,6 +59,7 @@ export interface MapInstruction {
   bearing?: number;
   pitch?: number;
   durationMs?: number;
+  delta?: number;
 }
 
 /* ─────────────────── Climate Term ────────────────────────── */
@@ -79,6 +84,8 @@ export interface AffectedSector {
   sector: "Residential" | "Commercial" | "Industrial" | "Institutional" | "Business District" | "Mixed Use" | "Open Space";
   explanation: string;
   trustDelta: number;
+  /** Zone IDs from the zone registry that this sector impact applies to */
+  zoneIds?: string[];
   cameraTarget?: CameraTarget;
   mapInstructions: MapInstruction[];
 }
@@ -88,10 +95,21 @@ export interface DecisionResult {
   round: number;
   userInput: string;
   interpretation: string;
-  scoreDelta: number;
-  newScore: number;
-  satisfactionDelta: number;
-  newSatisfaction: number;
+  /** AI's justification for the changes */
+  justification: string;
+  /** Impact on ecology (0-100 scale shift) */
+  ecologyDelta: number;
+  /** The running total of the ecology score after this decision */
+  newEcology: number;
+  /** Impact on economy (0-100 scale shift) */
+  economyDelta: number;
+  /** The running total of the economy score after this decision */
+  newEconomy: number;
+  /** Impact on society (0-100 scale shift), calculated from sector averages */
+  societyDelta?: number;
+  /** The running total of the society score after this decision */
+  newSociety?: number;
+  /** Impact on specific sector stakeholders */
   affectedSectors: AffectedSector[];
   mapInstructions: MapInstruction[];
   explanation: string;
@@ -100,12 +118,11 @@ export interface DecisionResult {
   alternativeMapInstructions: MapInstruction[];
 }
 
-/* ─────────────────── Decision Evaluation ─────────────────── */
+/* ───────────────── Decision Evaluation ─────────────────── */
 export interface DecisionEvaluation {
   status: "accepted" | "rejected" | "needs_more_info";
   justification: string;
   hint: string;
-  capitalCost?: number; // 1-40, defined when accepted
 }
 
 /* ───────────────── Prediction Evaluation ───────────────── */
@@ -121,11 +138,13 @@ export interface ReportSession {
   userName: string;
   location: Location;
   headline: ClimateHeadline;
-  finalScore: number;
+  finalEcology: number;
+  finalEconomy: number;
+  finalSociety: number;
   decisions: DecisionResult[];
   verdict: string;
+  postMortem?: string;
   createdAt: string;
-  policyCapitalHistory?: { starting: number, roundCost: number, ending: number }[];
   sectorStakeholders?: SectorStakeholder[];
   predictionRanking?: string[];
   predictionRisk?: string[];
@@ -134,8 +153,9 @@ export interface ReportSession {
 
 export interface PeerReport {
   headline_id: string;
-  final_score: number;
-  final_satisfaction: number;
+  final_ecology: number;
+  final_economy: number;
+  final_society: number;
   decision_count: number;
   decisions_summary: string[];
 }

@@ -15,6 +15,7 @@ import ScenarioPanel from "@/components/sim/ScenarioPanel";
 import SimDecisionUI from "./SimDecisionUI";
 import DeckGLOverlay from "@/components/map/DeckGLOverlay";
 import ZoneLegend from "@/components/sim/ZoneLegend";
+import AnalysisLoading from "@/components/sim/AnalysisLoading";
 
 import { Loader2, Play } from "lucide-react";
 
@@ -119,11 +120,11 @@ export default function SimPage() {
             .generateReport(
                 sim.location,
                 sim.selectedHeadline,
-                sim.currentScore,
-                sim.satisfactionScore,
+                sim.currentEcology,
+                sim.currentEconomy,
+                sim.societyScore,
                 sim.decisions,
                 "Anonymous",
-                sim.policyCapitalHistory,
                 sim.sectorStakeholders,
                 sim.predictionRanking,
                 sim.predictionRisk,
@@ -158,7 +159,7 @@ export default function SimPage() {
 
             {/* Resume B-Roll Button */}
             {map.isBrollPaused && sim.step !== "complete" && (
-                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 pointer-events-auto z-[1000] animate-in slide-in-from-bottom-4 fade-in duration-300">
+                <div className="absolute top-24 right-6 pointer-events-auto z-[1000] animate-in fade-in duration-300">
                     <button
                         onClick={map.resumeBroll}
                         className="bg-card/90 backdrop-blur-md border border-border text-foreground px-5 py-2.5 rounded-full shadow-xl flex items-center gap-2 hover:bg-card/100 hover:scale-105 transition-all text-sm font-semibold"
@@ -186,11 +187,15 @@ export default function SimPage() {
                 {sim.step === "headline" && (
                     <div className="pointer-events-auto mt-auto max-h-[70vh] w-full max-w-sm mx-auto sm:max-w-md">
                         <div className="rounded-2xl bg-card/90 backdrop-blur-md border border-border shadow-xl overflow-hidden">
-                            <HeadlineSelector
-                                headlines={sim.headlines}
-                                isLoading={sim.isLoading}
-                                onSelect={handleHeadlineSelect}
-                            />
+                            {sim.isLoading && sim.selectedHeadline ? (
+                                <AnalysisLoading />
+                            ) : (
+                                <HeadlineSelector
+                                    headlines={sim.headlines}
+                                    isLoading={sim.isLoading}
+                                    onSelect={handleHeadlineSelect}
+                                />
+                            )}
                         </div>
                     </div>
                 )}
@@ -198,7 +203,7 @@ export default function SimPage() {
 
                 {/* Scenario briefing */}
                 {sim.step === "scenario" && sim.scenario && (
-                    <div className="pointer-events-auto mt-auto sm:mt-0 sm:ml-auto sm:mr-4 sm:self-end">
+                    <div className="pointer-events-auto mt-auto sm:mt-6 sm:ml-auto sm:mr-4 sm:self-start">
                         <ScenarioPanel
                             context={sim.scenario.context}
                             availableSectors={sim.sectorStakeholders.map(s => s.sectorId)}

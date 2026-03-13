@@ -3,10 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 
 const STATS = [
-    { value: 12, suffix: "", label: "Countries" },
-    { value: 50, suffix: "+", label: "Scenarios" },
-    { value: 100, suffix: "+", label: "Schools" },
-    { value: 10, suffix: "k+", label: "Students" },
+    { value: 5, suffix: "", label: "Decision Rounds" },
+    { value: 7, suffix: "", label: "City Sectors" },
+    { value: 3, suffix: "", label: "Impact Pillars" },
+    { value: 270, suffix: "+", label: "Real Zones" },
 ];
 
 function useCountUp(target: number, isVisible: boolean) {

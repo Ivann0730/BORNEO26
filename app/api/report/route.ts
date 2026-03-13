@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { nanoid } from "nanoid";
 import { reportBodySchema } from "@/lib/validations/api";
 import { buildVerdictPrompt } from "@/lib/gemini/prompts";
-import { getGeminiText } from "@/lib/gemini/parser";
+import { parseGeminiJson } from "@/lib/gemini/parser";
+import { verdictSchema } from "@/lib/gemini/schemas";
 import { supabaseServer } from "@/lib/supabase/server";
 import type { DecisionResult } from "@/types";
 
@@ -18,19 +19,25 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const { location, headline, finalScore, finalSatisfaction, decisions, userName, policyCapitalHistory, sectorStakeholders, predictionRanking, predictionRisk, predictionEvaluation } =
+        const { headline, finalEcology, finalEconomy, finalSociety, decisions, userName, sectorStakeholders, predictionRanking, predictionRisk, predictionEvaluation } =
             parsed.data;
 
         const slug = nanoid(8);
 
-        const verdict = await getGeminiText(
+        const verdictResult = await parseGeminiJson(
             buildVerdictPrompt(
-                location,
+                { name: headline.locationTag, lat: 0, lng: 0, country: "", region: "" }, // Mock Location object, buildVerdictPrompt only uses name
                 headline,
-                finalScore,
+                finalEcology,
+                finalEconomy,
+                finalSociety,
                 decisions as DecisionResult[]
-            )
+            ),
+            verdictSchema
         );
+
+        // Stringify the guaranteed JSON object for Supabase
+        const verdict = JSON.stringify(verdictResult);
 
         const decisionCount = decisions.length;
         const decisionsSummary = (decisions as any[]).map((d: any) =>
@@ -40,16 +47,16 @@ export async function POST(request: NextRequest) {
         const { error } = await supabaseServer.from("reports").insert({
             slug,
             user_name: userName,
-            location,
+            location: headline.locationTag, // Just fallback since location was removed from schema body for report
             headline,
-            final_score: finalScore,
+            final_ecology: finalEcology,
+            final_economy: finalEconomy,
+            final_society: finalSociety,
             decisions,
             verdict,
-            final_satisfaction: finalSatisfaction,
             decision_count: decisionCount,
             decisions_summary: decisionsSummary,
             headline_id: headline.id,
-            policy_capital_history: policyCapitalHistory,
             sector_stakeholders: sectorStakeholders,
             prediction_ranking: predictionRanking,
             prediction_risk: predictionRisk,

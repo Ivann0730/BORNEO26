@@ -12,10 +12,12 @@ import type { CameraTarget, MapInstruction } from "@/types";
 import { buildLayers } from "@/lib/mapbox/layerBuilder";
 import { useTrafficSimulation } from "@/hooks/useTrafficSimulation";
 import { buildTrafficLayer } from "@/components/traffic/TrafficOverlay";
+import { useParticleSimulation } from "@/hooks/useParticleSimulation";
 
 export function useMap() {
     const mapRef = useRef<mapboxgl.Map | null>(null);
     const [layers, setLayers] = useState<MapInstruction[]>([]);
+    const [particleInstructions, setParticleInstructions] = useState<MapInstruction[]>([]);
     const [isMapReady, setIsMapReady] = useState(false);
     const [isBrollPaused, setIsBrollPaused] = useState(false);
     const brollParamsRef = useRef<{lng: number, lat: number, zoom?: number, pitch?: number} | null>(null);
@@ -105,12 +107,18 @@ export function useMap() {
     // Traffic simulation
     const traffic = useTrafficSimulation(mapRef.current);
 
-    // Merge scenario layers with traffic layer
+    // Particle simulation for effects
+    const particleLayer = useParticleSimulation(particleInstructions);
+
+    // Merge scenario layers with traffic & particle layers
     const scenarioLayers = buildLayers(layers);
     const trafficLayer = buildTrafficLayer(traffic.state);
-    const deckLayers = trafficLayer
-        ? [...scenarioLayers, trafficLayer]
-        : scenarioLayers;
+    
+    const deckLayers = [
+        ...scenarioLayers,
+        ...(trafficLayer ? [trafficLayer] : []),
+        ...(Array.isArray(particleLayer) ? particleLayer : particleLayer ? [particleLayer] : []),
+    ];
 
     return {
         mapRef,
@@ -120,6 +128,7 @@ export function useMap() {
         flyToCoords,
         addLayers,
         clearLayers,
+        setParticleInstructions,
         startBroll,
         stopBroll,
         resumeBroll,

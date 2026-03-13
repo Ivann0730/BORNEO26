@@ -2,19 +2,29 @@
 
 import { useRef } from "react";
 import html2canvas from "html2canvas";
-import { Download, Link2, Award } from "lucide-react";
+import { Download, Link2, Leaf, Briefcase, Users } from "lucide-react";
 import type { ReportSession } from "@/types";
 
 interface ShareCardProps {
     report: ReportSession;
 }
 
+function getEcologyColor(val: number): string {
+    if (val <= 30) return "text-red-400";
+    if (val <= 60) return "text-amber-400";
+    return "text-green-400";
+}
 
-function getScoreLabel(score: number): string {
-    if (score >= 80) return "Climate Champion";
-    if (score >= 60) return "Thoughtful Leader";
-    if (score >= 40) return "Learning Leader";
-    return "Getting Started";
+function getEconomyColor(val: number): string {
+    if (val <= 10) return "text-red-400";
+    if (val <= 40) return "text-amber-400";
+    return "text-blue-400";
+}
+
+function getSocietyColor(val: number): string {
+    if (val <= 15) return "text-red-400";
+    if (val <= 45) return "text-amber-400";
+    return "text-orange-400";
 }
 
 export default function ShareCard({ report }: ShareCardProps) {
@@ -64,7 +74,9 @@ export default function ShareCard({ report }: ShareCardProps) {
                         {report.headline.title}
                     </p>
                     <p className="text-xs opacity-70 mt-1">
-                        {report.location.name}, {report.location.country}
+                        {typeof report.location === 'string'
+                            ? report.location
+                            : `${report.location?.name || 'Unknown Location'}${report.location?.country ? `, ${report.location.country}` : ''}`}
                     </p>
                 </div>
 
@@ -76,20 +88,57 @@ export default function ShareCard({ report }: ShareCardProps) {
                             </p>
                         )}
                     </div>
+                    {/* Ecology */}
                     <div className="flex items-center gap-2">
-                        <Award className="h-5 w-5" />
-                        <span className="text-2xl font-bold">
-                            {report.finalScore}%
+                        <Leaf className={`h-4 w-4 ${getEcologyColor(report.finalEcology)}`} />
+                        <span className="text-xl font-bold">
+                            {report.finalEcology}%
                         </span>
+                        <div className="flex flex-col ml-0.5">
+                            <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">Ecology</span>
+                            <span className="text-[8px] opacity-40 -mt-0.5">Environmental Health</span>
+                        </div>
                     </div>
-                    <p className="text-xs font-medium">
-                        {getScoreLabel(report.finalScore)}
-                    </p>
-                    {report.verdict && (
-                        <p className="text-xs opacity-80 italic mt-1">
-                            {report.verdict}
-                        </p>
-                    )}
+                    {/* Economy */}
+                    <div className="flex items-center gap-2">
+                        <Briefcase className={`h-4 w-4 ${getEconomyColor(report.finalEconomy)}`} />
+                        <span className="text-xl font-bold">
+                            {report.finalEconomy}%
+                        </span>
+                        <div className="flex flex-col ml-0.5">
+                            <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">Economy</span>
+                            <span className="text-[8px] opacity-40 -mt-0.5">City Fiscal Health</span>
+                        </div>
+                    </div>
+                    {/* Society */}
+                    <div className="flex items-center gap-2">
+                        <Users className={`h-4 w-4 ${getSocietyColor(report.finalSociety)}`} />
+                        <span className="text-xl font-bold">
+                            {report.finalSociety}%
+                        </span>
+                        <div className="flex flex-col ml-0.5">
+                            <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">Society</span>
+                            <span className="text-[8px] opacity-40 -mt-0.5">Public Trust</span>
+                        </div>
+                    </div>
+                    {(() => {
+                        let verdictText = report.verdict || "";
+                        if (verdictText) {
+                            let cleanVerdict = verdictText.replace(/```(?:json)?/g, "").trim();
+                            if (cleanVerdict.startsWith("{")) {
+                                try {
+                                    const parsed = JSON.parse(cleanVerdict);
+                                    verdictText = parsed.verdict || verdictText;
+                                } catch { /* use raw */ }
+                            }
+                        }
+                        
+                        return verdictText ? (
+                            <p className="text-xs opacity-80 italic mt-3 leading-snug">
+                                {verdictText}
+                            </p>
+                        ) : null;
+                    })()}
                 </div>
             </div>
 
