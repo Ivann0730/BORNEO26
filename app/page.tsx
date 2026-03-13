@@ -4,6 +4,8 @@ import WorldMapBg from "@/components/landing/WorldMapBg";
 import HeroSection from "@/components/landing/HeroSection";
 import NewsTicker from "@/components/landing/NewsTicker";
 import HowItWorks from "@/components/landing/HowItWorks";
+import FeaturesSection from "@/components/landing/FeaturesSection";
+import EvaluationSection from "@/components/landing/EvaluationSection";
 import StatsBar from "@/components/landing/StatsBar";
 import BottomCTA from "@/components/landing/BottomCTA";
 
@@ -20,9 +22,10 @@ export default function LandingPage() {
       <HeroSection />
       <NewsTicker />
       <HowItWorks />
+      <FeaturesSection />
+      <EvaluationSection />
       <StatsBar />
       <BottomCTA />
     </div>
   );
 }
-
