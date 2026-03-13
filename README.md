@@ -1,3 +1,4 @@
+<img width="1901" height="862" alt="Screenshot 2026-03-13 164343" src="https://github.com/user-attachments/assets/fa3472fb-079d-424d-8f8e-385ce25171c4" />
 # STEMMA
 
 Built for the BorNEO HackWknd 2026, STEMMA is a geospatial scenario simulation platform designed to bridge the gap between abstract climate data and actionable community education. Representing the Philippines, our team is dedicated to transforming how the ASEAN region visualizes and prepares for its most pressing environmental threats.
@@ -102,7 +103,6 @@ Lorraine Quezada
 
 # "we are teaching them to think about their own thinking"
 
-<img width="1901" height="862" alt="Screenshot 2026-03-13 164343" src="https://github.com/user-attachments/assets/fa3472fb-079d-424d-8f8e-385ce25171c4" />
 
 <img width="1917" height="867" alt="Loding" src="https://github.com/user-attachments/assets/0e9658d6-177d-4c8b-91d3-b7a31a5804ac" />
 
