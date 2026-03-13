@@ -37,6 +37,11 @@ export function flyToCoordinates(
 /* ────────── B-Roll Animation ────────── */
 
 let brollAnimationId: number | null = null;
+let brollMoveEndHandler: (() => void) | null = null;
+let brollMap: mapboxgl.Map | null = null;
+
+const BROLL_SEGMENT_DEGREES = 15; // Degrees per segment
+const BROLL_SEGMENT_DURATION = 10000; // 10 seconds per segment — smooth and slow
 
 export function startBrollAnimation(
     map: mapboxgl.Map,
@@ -46,25 +51,34 @@ export function startBrollAnimation(
     pitch: number = 75
 ): void {
     stopBrollAnimation();
-    let bearing = map.getBearing();
+    brollMap = map;
 
-    function rotate() {
-        bearing = (bearing + 0.15) % 360;
-        map.rotateTo(bearing, { duration: 0 });
-        brollAnimationId = requestAnimationFrame(rotate);
+    function rotateSegment() {
+        if (!brollMap) return;
+        const currentBearing = brollMap.getBearing();
+        brollMap.easeTo({
+            bearing: currentBearing + BROLL_SEGMENT_DEGREES,
+            duration: BROLL_SEGMENT_DURATION,
+            easing: (t) => t, // Linear — constant angular velocity
+        });
     }
+
+    // Chain segments: when one finishes, start the next
+    brollMoveEndHandler = () => rotateSegment();
+    map.on("moveend", brollMoveEndHandler);
 
     map.flyTo({
         center: [centerLng, centerLat],
         zoom,
         pitch,
-        bearing,
+        bearing: map.getBearing(),
         duration: 2500,
         essential: true,
     });
 
+    // Start the first rotation segment after the initial flyTo completes
     map.once("moveend", () => {
-        brollAnimationId = requestAnimationFrame(rotate);
+        rotateSegment();
     });
 }
 
@@ -73,6 +87,12 @@ export function stopBrollAnimation(): void {
         cancelAnimationFrame(brollAnimationId);
         brollAnimationId = null;
     }
+    if (brollMap && brollMoveEndHandler) {
+        brollMap.off("moveend", brollMoveEndHandler);
+        brollMap.stop(); // Stop any in-progress easeTo
+        brollMoveEndHandler = null;
+    }
+    brollMap = null;
 }
 
 /* ────────── 3D Terrain ────────── */

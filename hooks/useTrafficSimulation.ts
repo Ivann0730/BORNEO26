@@ -38,6 +38,7 @@ export function useTrafficSimulation(
 
   const configRef = useRef(state.config);
   const installedRef = useRef(false);
+  const timeRef = useRef(0); // Raw time at ~60fps, no React re-renders
 
   // Install hidden road query layers once
   useEffect(() => {
@@ -101,14 +102,22 @@ export function useTrafficSimulation(
       // Scale perceived time by speedMultiplier
       const scaledTime = elapsed * state.config.speedMultiplier;
       const loopTime = scaledTime % state.config.loopDurationMs;
-      
-      setState((prev) => ({
-        ...prev,
-        currentTime: loopTime,
-      }));
+      // Store raw time in ref (no re-render)
+      timeRef.current = loopTime;
     });
 
-    return () => unsubscribe(INSTANCE_ID);
+    // Throttled React re-render at ~24fps
+    const intervalId = setInterval(() => {
+      setState((prev) => ({
+        ...prev,
+        currentTime: timeRef.current,
+      }));
+    }, 42); // ~24fps
+
+    return () => {
+      unsubscribe(INSTANCE_ID);
+      clearInterval(intervalId);
+    };
   }, [state.isPlaying, state.config.loopDurationMs, state.config.speedMultiplier]);
 
   // Listen for map events to trigger regeneration when view settles

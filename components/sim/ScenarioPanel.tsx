@@ -17,21 +17,35 @@ export default function ScenarioPanel({ context, availableSectors, onComplete }:
     const [riskInput, setRiskInput] = useState("");
 
     useEffect(() => {
-        let i = 0;
         setDisplayedText("");
         setShowButton(false);
+        if (!context) return;
 
-        const interval = setInterval(() => {
-            if (i < context.length) {
-                setDisplayedText(context.slice(0, i + 1));
-                i++;
+        let rafId: number;
+        let startTime: number | null = null;
+        const CHARS_PER_SECOND = 40; // Consistent typing speed regardless of frame rate
+
+        const tick = (timestamp: number) => {
+            if (!startTime) startTime = timestamp;
+            const elapsed = timestamp - startTime;
+
+            // Calculate how many characters should be visible by now
+            const charIndex = Math.min(
+                Math.floor((elapsed / 1000) * CHARS_PER_SECOND),
+                context.length
+            );
+
+            setDisplayedText(context.slice(0, charIndex));
+
+            if (charIndex < context.length) {
+                rafId = requestAnimationFrame(tick);
             } else {
-                clearInterval(interval);
                 setTimeout(() => setShowButton(true), 500);
             }
-        }, 25);
+        };
 
-        return () => clearInterval(interval);
+        rafId = requestAnimationFrame(tick);
+        return () => cancelAnimationFrame(rafId);
     }, [context]);
 
     function toggleSector(sector: string) {
