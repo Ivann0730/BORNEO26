@@ -7,39 +7,39 @@ Built for the BorNEO HackWknd 2026, STEMMA is a geospatial scenario simulation p
 # VIDEO DEMO: [Link]
 
 # The Challenge: AI for Climate Education (Case Study #4)
-ASEAN is one of the world's most vulnerable regions to climate risks, facing intensifying typhoons, rising sea levels, and devastating heatwaves. Despite the urgency, climate education often remains theoretical and abstract.
+**ASEAN** is one of the world's most vulnerable regions to climate risks, facing intensifying typhoons, rising sea levels, and devastating heatwaves. Despite the urgency, climate education often remains theoretical and abstract.
 
-STEMMA addresses these critical gaps:
+**STEMMA** addresses these critical gaps:
 
-Abstract to Visceral: Moving beyond static textbooks to show the reality of climate change.
+**Abstract to Viscera**l: Moving beyond static textbooks to show the reality of climate change.
 
-Policy Visualization: Using AI-powered simulators to visualize the environmental and social consequences of policies like carbon taxes or reforestation.
+**Policy Visualization**: Using AI-powered simulators to visualize the environmental and social consequences of policies like carbon taxes or reforestation.
 
-Local Relevance: Utilizing personalized AI to adapt complex science into locally relevant, age-appropriate insights.
+**Local Relevance**: Utilizing personalized AI to adapt complex science into locally relevant, age-appropriate insights.
 
-Active Problem-Solving: Turning passive learners into active designers of sustainable systems for water preservation and farming.
+**Active Problem-Solving:** Turning passive learners into active designers of sustainable systems for water preservation and farming.
 
 # Features
-Interactive Geospatial Interface: High-fidelity map overlays using deck.gl to visualize rising sea levels and climate impact zones.
+**Interactive Geospatial Interface**: High-fidelity map overlays using deck.gl to visualize rising sea levels and climate impact zones.
 
-Scenario Simulation Engine: A decision-driven workflow where users can input parameters such as reforestation rates and urban density to see real-time risk scores.
+**Scenario Simulation Engine**: A decision-driven workflow where users can input parameters such as reforestation rates and urban density to see real-time risk scores.
 
-AI-Assisted Analysis: Automated generation of "Climate Headlines" and deep-dive reports via custom API routes to explain the data.
+**AI-Assisted Analysis**: Automated generation of "Climate Headlines" and deep-dive reports via custom API routes to explain the data.
 
-Shareable Decision Reports: Dynamically generated reports with unique slugs to foster community-led climate advocacy.
+**Shareable Decision Reports**: Dynamically generated reports with unique slugs to foster community-led climate advocacy.
 
-Accessible UX: Responsive design featuring a theme toggle and voice hints to ensure education is inclusive for all users.
+**Accessible UX**: Responsive design featuring a theme toggle and voice hints to ensure education is inclusive for all users.
 
 # Tech Stack
-Framework: Next.js 15+ (App Router)
+**Framework**: Next.js 15+ (App Router)
 
-Visualization: Deck.gl, Mapbox GL JS
+**Visualization**: Deck.gl, Mapbox GL JS
 
-Backend & Persistence: Supabase
+**Backend & Persistence**: Supabase
 
-AI Engine: Gemini (Genie API) for derived insights and personalized tutoring logic
+**AI Engine**: Gemini (Genie API) for derived insights and personalized tutoring logic
 
-State Management: Custom React Hooks for simulation logic
+**State Management**: Custom React Hooks for simulation logic
 
 # Getting Started
 This is a Next.js project bootstrapped with create-next-app.
@@ -109,15 +109,15 @@ The easiest way to deploy your Next.js app is to use the Vercel Platform. Check 
 # The Team: STEMMA (Philippines)
 We are 3rd-year BS Computer Science students at Cebu Institute of Technology – University passionate about leveraging technology for social impact:
 
-Ivann James Paradero
+*Ivann James Paradero*
 
-Gianna Katrin Carreon
+*Gianna Katrin Carreon*
 
-Jervin Ryle Melliza
+*Jervin Ryle Melliza*
 
-James Ewican
+*James Ewican*
 
-Lorraine Quezada
+*Lorraine Quezada*
 
 # Acknowledgments
  Developed for the BorNEO HackWknd 2026 Case Study Booklet. Special thanks to the organizers for highlighting the role of AI in ASEAN Social Impact.
