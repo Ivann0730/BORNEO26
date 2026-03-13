@@ -7,7 +7,7 @@ Built for the BorNEO HackWknd 2026, STEMMA is a geospatial scenario simulation p
 
 ### VIDEO DEMO: [View Video Demo](https://www.youtube.com/watch?v=131l7wM7v_k)
 ### REPORT: [View Report](https://drive.google.com/file/d/1EIcvyHEKbIps6HSNui63zr-nerH2jYi7/view?usp=sharing)
-### DEPLOYMENT: [VIEW APPLICATION](https://stemma-borneo.vercel.app/)
+### DEPLOYMENT: [View Deployment](https://stemma-borneo.vercel.app/)
 
 # The Challenge: AI for Climate Education (Case Study #4)
 **ASEAN** is one of the world's most vulnerable regions to climate risks, facing intensifying typhoons, rising sea levels, and devastating heatwaves. Despite the urgency, climate education often remains theoretical and abstract.
