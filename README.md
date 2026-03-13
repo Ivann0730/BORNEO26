@@ -4,10 +4,6 @@ Built for the BorNEO HackWknd 2026, STEMMA is a geospatial scenario simulation p
 
 # VIDEO DEMO: [Link]
 
-# GITHUB LINK: [Link]
-
-# REPORT: [Link]
-
 # The Challenge: AI for Climate Education (Case Study #4)
 ASEAN is one of the world's most vulnerable regions to climate risks, facing intensifying typhoons, rising sea levels, and devastating heatwaves. Despite the urgency, climate education often remains theoretical and abstract.
 
@@ -102,6 +98,13 @@ James Ewican
 Lorraine Quezada
 
 # Acknowledgments
-# Developed for the BorNEO HackWknd 2026 Case Study Booklet. Special thanks to the organizers for highlighting the role of AI in ASEAN Social Impact.
+ Developed for the BorNEO HackWknd 2026 Case Study Booklet. Special thanks to the organizers for highlighting the role of AI in ASEAN Social Impact.
 
 # "we are teaching them to think about their own thinking"
+
+<img width="1901" height="862" alt="Screenshot 2026-03-13 164343" src="https://github.com/user-attachments/assets/fa3472fb-079d-424d-8f8e-385ce25171c4" />
+
+<img width="1917" height="867" alt="Loding" src="https://github.com/user-attachments/assets/0e9658d6-177d-4c8b-91d3-b7a31a5804ac" />
+
+
+
