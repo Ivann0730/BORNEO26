@@ -54,48 +54,48 @@ This is a Next.js project bootstrapped with create-next-app.
 
 <details>
 <summary> Installation </summary>
-Bash
-```
-git clone <repo-url>
+    Bash
+    ```
+    git clone <repo-url>
 
-cd BORNEO26
+    cd BORNEO26
 
-npm install
-```
+    npm install
+    ```
 
 ### Environment Setup
-Create a .env file in the root directory:
+    Create a .env file in the root directory:
 
-```
-NEXT_PUBLIC_MAPBOX_TOKEN=your_mapbox_token
+    ```
+    NEXT_PUBLIC_MAPBOX_TOKEN=your_mapbox_token
 
-SUPABASE_URL=your_supabase_url
+    SUPABASE_URL=your_supabase_url
 
-SUPABASE_ANON_KEY=your_anon_key
+    SUPABASE_ANON_KEY=your_anon_key
 
-GENIE_API_KEY=your_gemini_api_key
-```
+    GENIE_API_KEY=your_gemini_api_key
+    ```
 ### Development
 
-First, run the development server:
+    First, run the development server:
 
-```
-Bash
+    ```
+    Bash
 
-npm run dev
+    npm run dev
 
-or
+    or
 
-yarn dev
+    yarn dev
 
-or
+    or
 
-pnpm dev
+    pnpm dev
 
-or
+    or
 
-bun dev
-```
+    bun dev
+    ```
 Open http://localhost:3000 with your browser to see the result. You can start editing the page by modifying app/page.tsx. The page auto-updates as you edit the file.
 
 This project uses next/font to automatically optimize and load Geist, a new font family for Vercel.
