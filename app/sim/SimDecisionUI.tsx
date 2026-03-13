@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import ScoreIndicator from "@/components/sim/ScoreIndicator";
+import HeadlineBanner from "@/components/sim/HeadlineBanner";
 import ExplanationPanel from "@/components/sim/ExplanationPanel";
 import HintButton from "@/components/sim/HintButton";
 import DecisionInput from "@/components/sim/DecisionInput";
@@ -181,6 +182,13 @@ export default function SimDecisionUI({ sim, decision, map }: SimDecisionUIProps
                 previousSociety={prevSociety}
                 round={sim.currentRound}
             />
+
+            {sim.selectedHeadline && sim.scenario && (
+                <HeadlineBanner
+                    title={sim.selectedHeadline.title}
+                    briefing={sim.scenario.context}
+                />
+            )}
 
             <ZoneLegend
                 sectorTrusts={sim.sectorStakeholders.reduce((acc, s) => ({ ...acc, [s.sectorId]: s.approval }), {})}

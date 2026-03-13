@@ -43,6 +43,8 @@ export interface Scenario {
   cameraTarget: CameraTarget;
   /** Available zone IDs from the zone registry for this location */
   availableZoneIds?: string[];
+  /** Optional GeoJSON polygon representing the affected area footprint */
+  affectedArea?: GeoJSON.Feature | GeoJSON.FeatureCollection;
 }
 
 /* ─────────────────── Map Instruction ─────────────────────── */
