@@ -35,7 +35,7 @@ export default function ZoneLegend({ sectorTrusts, activeSectorId, activeSectorD
                 onClick={() => setIsOpen((v) => !v)}
                 className="flex items-center gap-1.5 rounded-xl bg-card/90 backdrop-blur-md border border-border px-3 py-2 text-xs font-medium shadow-md hover:bg-card transition-colors"
             >
-                <span>Zones</span>
+                <span>Sector Trust</span>
                 {isOpen ? (
                     <ChevronUp className="h-3 w-3" />
                 ) : (

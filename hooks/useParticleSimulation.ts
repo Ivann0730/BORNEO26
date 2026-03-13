@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { SimpleMeshLayer } from '@deck.gl/mesh-layers';
 import * as turf from '@turf/turf';
 import { subscribe, unsubscribe } from '@/lib/traffic/animationDriver';
@@ -85,7 +85,10 @@ function createArrowMesh() {
 const ARROW_MESH = createArrowMesh();
 
 export function useParticleSimulation(instructions: MapInstruction[]) {
-    const [currentTime, setCurrentTime] = useState(0);
+    // Store time in a ref to avoid re-renders on every RAF tick
+    const timeRef = useRef(0);
+    // Throttled tick counter: triggers React re-render at ~24fps instead of ~60fps
+    const [tick, setTick] = useState(0);
     const [particles, setParticles] = useState<Particle[]>([]);
 
     useEffect(() => {
@@ -164,19 +167,30 @@ export function useParticleSimulation(instructions: MapInstruction[]) {
             }
         });
         setParticles(newParticles);
-        console.log("[useParticleSimulation] Generated particles:", newParticles.length, newParticles);
     }, [instructions]);
 
+    // Subscribe to animation loop — store time in ref, throttle React re-renders to ~24fps
     useEffect(() => {
-        console.log("[useParticleSimulation] Hook effect triggered. Particle count:", particles.length);
         if (particles.length === 0) return;
-        subscribe(INSTANCE_ID, (elapsed) => setCurrentTime(elapsed));
+        let lastRenderTime = 0;
+        const THROTTLE_MS = 42; // ~24fps React updates
+
+        subscribe(INSTANCE_ID, (elapsed) => {
+            timeRef.current = elapsed;
+            if (elapsed - lastRenderTime >= THROTTLE_MS) {
+                lastRenderTime = elapsed;
+                setTick(t => t + 1);
+            }
+        });
         return () => unsubscribe(INSTANCE_ID);
     }, [particles.length]);
 
     if (particles.length === 0) {
         return null;
     }
+
+    // Read current time from ref (updated at ~60fps by RAF, but React only re-renders at ~24fps)
+    const currentTime = timeRef.current;
 
     // A single True 3D Mesh Arrow Swarm rendering continuous particles
     const meshLayer = new SimpleMeshLayer({
@@ -187,7 +201,7 @@ export function useParticleSimulation(instructions: MapInstruction[]) {
         getPosition: d => d.position,
         getScale: (d: Particle) => [d.sizeOffset, d.sizeOffset, d.sizeOffset],
         getColor: d => {
-            const loopDuration = 12000; // Slowing down massively for majestic rise
+            const loopDuration = 12000;
             const t = ((currentTime + d.delayOffset) % loopDuration) / loopDuration;
 
             // Fade in over first 15%, solid for 70%, fade out over last 15%
@@ -203,20 +217,19 @@ export function useParticleSimulation(instructions: MapInstruction[]) {
             return d.delta > 0 ? [0, 0, 0] : [180, 0, 0];
         },
         getTranslation: (d: Particle) => {
-            const loopDuration = 8000; // Same slow loop
+            const loopDuration = 8000;
             const t = ((currentTime + d.delayOffset) % loopDuration) / loopDuration;
 
             // Rise or fall continuously
-            const totalRise = 60; // Ascend/Descend Total Distance
-            // Add a small constant base elevation so they don't clip entirely at spawn
+            const totalRise = 60;
             const baseZ = 20;
             const zOffset = d.delta > 0 ? (baseZ + t * totalRise) : (totalRise - (t * totalRise) + baseZ);
 
-            return [0, 0, zOffset]; // Z is "up" from ground level in Deck.GL translation
+            return [0, 0, zOffset];
         },
         updateTriggers: {
-            getColor: [currentTime],
-            getTranslation: [currentTime]
+            getColor: [tick],
+            getTranslation: [tick]
         },
         material: {
             ambient: 0.8,
