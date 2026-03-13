@@ -6,7 +6,7 @@
 Built for the BorNEO HackWknd 2026, STEMMA is a geospatial scenario simulation platform designed to bridge the gap between abstract climate data and actionable community education. Representing the Philippines, our team is dedicated to transforming how the ASEAN region visualizes and prepares for its most pressing environmental threats.
 
 ### VIDEO DEMO: [Link]
-### REPORT: ["https://drive.google.com/file/d/1EIcvyHEKbIps6HSNui63zr-nerH2jYi7/view?usp=sharing"]
+### REPORT: [View Report](https://drive.google.com/file/d/1EIcvyHEKbIps6HSNui63zr-nerH2jYi7/view?usp=sharing)
 
 
 # The Challenge: AI for Climate Education (Case Study #4)
