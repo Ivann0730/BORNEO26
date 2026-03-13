@@ -49,29 +49,49 @@ Node.js 18+
 Mapbox & Supabase API Keys
 
 Installation
+
 Bash
+
 git clone <repo-url>
+
 cd BORNEO26
+
 npm install
-Environment Setup
+
+# Environment Setup
+
 Create a .env file in the root directory:
 
 Plaintext
+
 NEXT_PUBLIC_MAPBOX_TOKEN=your_mapbox_token
+
 SUPABASE_URL=your_supabase_url
+
 SUPABASE_ANON_KEY=your_anon_key
+
 GENIE_API_KEY=your_gemini_api_key
-Development
+
+# Development
+
 First, run the development server:
 
 Bash
+
 npm run dev
+
 or
+
 yarn dev
+
 or
+
 pnpm dev
+
 or
+
 bun dev
+
 Open http://localhost:3000 with your browser to see the result. You can start editing the page by modifying app/page.tsx. The page auto-updates as you edit the file.
 
 This project uses next/font to automatically optimize and load Geist, a new font family for Vercel.
