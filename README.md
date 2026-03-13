@@ -45,72 +45,69 @@ Built for the BorNEO HackWknd 2026, STEMMA is a geospatial scenario simulation p
 **State Management:** Custom React Hooks for simulation logic
 
 # Getting Started
-This is a Next.js project bootstrapped with create-next-app.
+
+Follow these instructions to set up the STEMMA project locally on your machine.
 
 ### Prerequisites
 
+Before you begin, ensure you have the following installed:
 - Node.js 18+
-- Mapbox & Supabase API Keys
+- npm, yarn, pnpm, or bun
 
-<details>
-<summary> Installation </summary>
-    Bash
-    ```
-    git clone <repo-url>
+You will also need API keys for the following services:
+- **Mapbox** (for map rendering and geocoding)
+- **Supabase** (for storing simulation reports)
+- **Google Gemini API** (for AI scenario and decision generation)
+- **GNews API** (for fetching real-time climate headlines)
 
-    cd BORNEO26
+### Installation
 
-    npm install
-    ```
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/Ivann0730/BORNEO26.git
+   cd BORNEO26
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
 ### Environment Setup
-    Create a .env file in the root directory:
 
-    ```
-    NEXT_PUBLIC_MAPBOX_TOKEN=your_mapbox_token
+Create a `.env.local` file in the root directory and add the following variables:
 
-    SUPABASE_URL=your_supabase_url
+```env
+# Mapbox Configuration
+NEXT_PUBLIC_MAPBOX_TOKEN=your_mapbox_public_token_here
 
-    SUPABASE_ANON_KEY=your_anon_key
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 
-    GENIE_API_KEY=your_gemini_api_key
-    ```
+# AI & Data APIs
+GEMINI_API_KEY=your_google_gemini_api_key
+GNEWS_API_KEY=your_gnews_api_key
+```
+
+*Note: If `GNEWS_API_KEY` is not provided, the app will fall back to predefined mock headlines (like the Cebu SRP Dumpsite scenario).*
+
 ### Development
 
-    First, run the development server:
+Run the development server:
 
-    ```
-    Bash
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
 
-    npm run dev
-
-    or
-
-    yarn dev
-
-    or
-
-    pnpm dev
-
-    or
-
-    bun dev
-    ```
-Open http://localhost:3000 with your browser to see the result. You can start editing the page by modifying app/page.tsx. The page auto-updates as you edit the file.
-
-This project uses next/font to automatically optimize and load Geist, a new font family for Vercel.
-
-</details>
-
-
-# Learn More & Deployment
-To learn more about Next.js, take a look at the following resources:
-
-Next.js Documentation - learn about Next.js features and API.
-
-Learn Next.js - an interactive Next.js tutorial.
-
-The easiest way to deploy your Next.js app is to use the Vercel Platform. Check out the Next.js deployment documentation for more details.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result. The application supports hot-reloading as you edit files.
 
 # Team James (Philippines)
 We are 3rd-year BS Computer Science students at Cebu Institute of Technology – University passionate about leveraging technology for social impact:
@@ -126,6 +123,13 @@ We are 3rd-year BS Computer Science students at Cebu Institute of Technology –
 Developed for the **BorNEO HackWknd 2026 Case Study Booklet**. Special thanks to the organizers for highlighting the role of AI in ASEAN Social Impact.
 
 > "we are teaching them to think about their own thinking"
+
+### AI Usage
+- Gemini 2.5 Flash (Large Language Model): Used as the core simulation engine to process student policy inputs, generate localized environmental narratives, and perform real-time sentiment analysis of simulated stakeholders.
+- Gemini 3 Flash (Development Assistance): Utilized during the development phase for code optimization (Next.js/Turf.js logic), drafting technical documentation, and refining the pedagogical structure of the learning checks.
+- Claude Opus 4.6 (Development Assistance): Utilized during the initial setup of the “skeleton” of the application, integrated MapBox with Deck.GL, created the mathematics needed for the zones.
+- Claude Sonnet 4.6 (General Prompting): Utilized in the creation of prompts used by the aforementioned AI tools. Also utilized in research of topics, technologies, and general information.
+- Gemini Nano Banana (PPT): Utilized in the generation of some images that were used in the PPT for the Demo Video.
 
 
 <img width="1917" height="867" alt="Loding" src="https://github.com/user-attachments/assets/0e9658d6-177d-4c8b-91d3-b7a31a5804ac" />
